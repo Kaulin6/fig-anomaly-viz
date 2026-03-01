@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fig Anomaly System — Strategy Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0a0c0f;
+    --surface:  #111418;
+    --border:   #1e2329;
+    --border2:  #2a3040;
+    --gold:     #c9a84c;
+    --gold2:    #e8c870;
+    --gold-dim: rgba(201,168,76,0.15);
+    --green:    #3ddc97;
+    --red:      #e05c5c;
+    --blue:     #5b9cf6;
+    --muted:    #4a5568;
+    --text:     #e2e8f0;
+    --text-dim: #8899aa;
+    --win:      #3ddc97;
+    --show:     #5b9cf6;
+    --blank:    #e05c5c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── GRAIN OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: 0.35;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    padding: 48px 40px 32px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #0d1117 0%, var(--bg) 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .header::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .header-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 300;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .header h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+  .header-sub {
+    margin-top: 12px;
+    color: var(--text-dim);
+    font-size: 12px;
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .header-sub span { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+
+  /* ── LAYOUT ── */
+  .main { max-width: 1400px; margin: 0 auto; padding: 32px 40px 80px; }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .section-title strong {
+    color: var(--text);
+    font-weight: 700;
+  }
+  .section-title .label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  /* ── STRATEGY CARDS ── */
+  .strategy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--card-accent, var(--border));
+    transition: background 0.2s;
+  }
+  .card:hover {
+    border-color: var(--border2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .card.active {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold-dim), 0 8px 32px rgba(201,168,76,0.15);
+  }
+  .card.active::before { background: var(--gold); }
+
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .card-name {
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .card-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .badge-gold { background: rgba(201,168,76,0.2); color: var(--gold2); border: 1px solid rgba(201,168,76,0.3); }
+  .badge-green { background: rgba(61,220,151,0.15); color: var(--green); border: 1px solid rgba(61,220,151,0.25); }
+  .badge-blue { background: rgba(91,156,246,0.15); color: var(--blue); border: 1px solid rgba(91,156,246,0.25); }
+  .badge-red { background: rgba(224,92,92,0.15); color: var(--red); border: 1px solid rgba(224,92,92,0.25); }
+
+  .card-roi {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .roi-pos { color: var(--green); }
+  .roi-neg { color: var(--red); }
+  .card-net { font-size: 11px; color: var(--text-dim); margin-bottom: 16px; }
+
+  .card-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .stat { text-align: center; }
+  .stat-val { font-size: 15px; font-weight: 500; color: var(--text); }
+  .stat-lbl { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+
+  .outcome-bar {
+    height: 4px;
+    border-radius: 2px;
+    display: flex;
+    overflow: hidden;
+    margin-top: 14px;
+    gap: 1px;
+  }
+  .bar-win { background: var(--win); }
+  .bar-show { background: var(--show); }
+  .bar-blank { background: var(--blank); }
+
+  /* ── EQUITY CHART ── */
+  .chart-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 48px;
+  }
+  .chart-legend {
+    display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; color: var(--text-dim);
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .legend-item:hover { color: var(--text); }
+  .legend-item.hidden { opacity: 0.35; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-roi { font-weight: 500; margin-left: 2px; }
+
+  #equityChart {
+    width: 100%;
+    height: 320px;
+    display: block;
+  }
+
+  /* ── FACTOR CHARTS ── */
+  .factors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+    margin-bottom: 48px;
+  }
+  .factor-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .factor-title {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+  .factor-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .factor-label {
+    width: 80px;
+    font-size: 11px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .factor-bar-wrap {
+    flex: 1;
+    height: 20px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .factor-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+    display: flex; align-items: center; justify-content: flex-end;
+    padding-right: 6px;
+  }
+  .factor-bar-roi { background: linear-gradient(90deg, rgba(201,168,76,0.6), var(--gold)); }
+  .factor-bar-neg { background: linear-gradient(90deg, rgba(224,92,92,0.6), var(--red)); }
+  .factor-roi-val {
+    width: 52px;
+    font-size: 11px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .factor-n {
+    width: 30px;
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── TOOLTIP ── */
+  .tooltip {
+    position: fixed;
+    background: #1a2030;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 11px;
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    min-width: 160px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .tooltip-date { color: var(--gold); font-size: 10px; margin-bottom: 6px; }
+  .tooltip-row { display: flex; justify-content: space-between; gap: 16px; }
+  .tooltip-row span:last-child { font-weight: 500; }
+
+  /* ── SCROLL ANIM ── */
+  .fade-in {
+    opacity: 0; transform: translateY(16px);
+    animation: fadeIn 0.5s ease forwards;
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in:nth-child(1) { animation-delay: 0.05s; }
+  .fade-in:nth-child(2) { animation-delay: 0.1s; }
+  .fade-in:nth-child(3) { animation-delay: 0.15s; }
+  .fade-in:nth-child(4) { animation-delay: 0.2s; }
+  .fade-in:nth-child(5) { animation-delay: 0.25s; }
+  .fade-in:nth-child(6) { animation-delay: 0.3s; }
+  .fade-in:nth-child(7) { animation-delay: 0.35s; }
+  .fade-in:nth-child(8) { animation-delay: 0.4s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .header { padding: 32px 20px 24px; }
+    .main { padding: 24px 20px 60px; }
+    .strategy-grid { grid-template-columns: 1fr 1fr; }
+    .factors-grid { grid-template-columns: 1fr; }
+    #equityChart { height: 220px; }
+  }
+  @media (max-width: 480px) {
+    .strategy-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-eyebrow">Fig Anomaly System · Jan–Feb 2026 · 10 Tracks</div>
+  <h1>Strategy <em>Visualizer</em></h1>
+  <div class="header-sub">
+    <span><span class="dot"></span>206 qualifying bets</span>
+    <span><span class="dot"></span>42 racing days</span>
+    <span><span class="dot"></span>Dirt · 4YO+ · No maiden</span>
+    <span><span class="dot"></span>Tote odds where available</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- STRATEGY CARDS -->
+  <div class="section-title">
+    <span class="label">01</span>
+    <strong>Strategy Comparison</strong>
+    — click any card to toggle on equity curve
+  </div>
+  <div class="strategy-grid" id="strategyGrid"></div>
+
+  <!-- EQUITY CURVE -->
+  <div class="section-title">
+    <span class="label">02</span>
+    <strong>Cumulative P&L Curve</strong>
+    — Jan 1 → Feb 28, 2026
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-legend" id="chartLegend"></div>
+    <canvas id="equityChart"></canvas>
+  </div>
+
+  <!-- FACTOR ANALYSIS -->
+  <div class="section-title">
+    <span class="label">03</span>
+    <strong>Factor Analysis</strong>
+    — ROI by individual variable
+  </div>
+  <div class="factors-grid" id="factorsGrid"></div>
+
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const RAW = {"dates": ["2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-10", "2026-01-11", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-24", "2026-01-25", "2026-01-28", "2026-01-30", "2026-01-31", "2026-02-01", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-07", "2026-02-08", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-14", "2026-02-15", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-21", "2026-02-22", "2026-02-26", "2026-02-27", "2026-02-28"], "strategies": {"v1_baseline": {"n": 206, "wins": 69, "shows": 63, "blanks": 74, "win_rate": 33.5, "show_rate": 64.1, "wagered": 732.0, "returned": 1230.82, "net": 498.82, "roi": 68.1, "daily_pl": [{"date": "2026-01-01", "profit": -7.06, "cum": -7.06, "n": 6}, {"date": "2026-01-02", "profit": -5.38, "cum": -12.44, "n": 7}, {"date": "2026-01-03", "profit": 5.7, "cum": -6.74, "n": 5}, {"date": "2026-01-04", "profit": -10.0, "cum": -16.74, "n": 3}, {"date": "2026-01-07", "profit": 15.4, "cum": -1.34, "n": 5}, {"date": "2026-01-08", "profit": -5.2, "cum": -6.54, "n": 4}, {"date": "2026-01-09", "profit": 7.1, "cum": 0.56, "n": 8}, {"date": "2026-01-10", "profit": 14.6, "cum": 15.16, "n": 3}, {"date": "2026-01-11", "profit": -8.2, "cum": 6.96, "n": 6}, {"date": "2026-01-15", "profit": 22.6, "cum": 29.56, "n": 6}, {"date": "2026-01-16", "profit": -19.44, "cum": 10.12, "n": 8}, {"date": "2026-01-17", "profit": -9.68, "cum": 0.44, "n": 6}, {"date": "2026-01-18", "profit": 14.56, "cum": 15.0, "n": 6}, {"date": "2026-01-19", "profit": -7.4, "cum": 7.6, "n": 3}, {"date": "2026-01-21", "profit": -9.8, "cum": -2.2, "n": 4}, {"date": "2026-01-22", "profit": -7.22, "cum": -9.42, "n": 6}, {"date": "2026-01-23", "profit": -4.64, "cum": -14.06, "n": 8}, {"date": "2026-01-24", "profit": 25.4, "cum": 11.34, "n": 4}, {"date": "2026-01-25", "profit": -1.2, "cum": 10.14, "n": 2}, {"date": "2026-01-28", "profit": 11.8, "cum": 21.94, "n": 1}, {"date": "2026-01-30", "profit": 8.0, "cum": 29.94, "n": 1}, {"date": "2026-01-31", "profit": 11.6, "cum": 41.54, "n": 2}, {"date": "2026-02-01", "profit": -2.0, "cum": 39.54, "n": 1}, {"date": "2026-02-04", "profit": 4.4, "cum": 43.94, "n": 3}, {"date": "2026-02-05", "profit": -2.18, "cum": 41.76, "n": 10}, {"date": "2026-02-06", "profit": 18.52, "cum": 60.28, "n": 3}, {"date": "2026-02-07", "profit": 6.4, "cum": 66.68, "n": 3}, {"date": "2026-02-08", "profit": -1.6, "cum": 65.08, "n": 1}, {"date": "2026-02-11", "profit": 60.86, "cum": 125.94, "n": 9}, {"date": "2026-02-12", "profit": 33.4, "cum": 159.34, "n": 7}, {"date": "2026-02-13", "profit": 36.08, "cum": 195.42, "n": 6}, {"date": "2026-02-14", "profit": 72.68, "cum": 268.1, "n": 8}, {"date": "2026-02-15", "profit": 67.36, "cum": 335.46, "n": 7}, {"date": "2026-02-17", "profit": 11.8, "cum": 347.26, "n": 1}, {"date": "2026-02-18", "profit": 23.4, "cum": 370.66, "n": 4}, {"date": "2026-02-19", "profit": 20.38, "cum": 391.04, "n": 1}, {"date": "2026-02-20", "profit": 44.1, "cum": 435.14, "n": 9}, {"date": "2026-02-21", "profit": 66.68, "cum": 501.82, "n": 9}, {"date": "2026-02-22", "profit": 10.6, "cum": 512.42, "n": 4}, {"date": "2026-02-26", "profit": -10.0, "cum": 502.42, "n": 3}, {"date": "2026-02-27", "profit": 0.2, "cum": 502.62, "n": 5}, {"date": "2026-02-28", "profit": -3.8, "cum": 498.82, "n": 8}]}, "v7_refined": {"n": 89, "wins": 35, "shows": 26, "blanks": 28, "win_rate": 39.3, "show_rate": 68.5, "wagered": 324.0, "returned": 564.8, "net": 240.8, "roi": 74.3, "daily_pl": [{"date": "2026-01-01", "profit": -4.66, "cum": -4.66, "n": 2}, {"date": "2026-01-02", "profit": -1.44, "cum": -6.1, "n": 4}, {"date": "2026-01-03", "profit": 6.0, "cum": -0.1, "n": 1}, {"date": "2026-01-04", "profit": 0, "cum": -0.1, "n": 0}, {"date": "2026-01-07", "profit": 0, "cum": -0.1, "n": 0}, {"date": "2026-01-08", "profit": -0.4, "cum": -0.5, "n": 1}, {"date": "2026-01-09", "profit": -6.1, "cum": -6.6, "n": 3}, {"date": "2026-01-10", "profit": 1.8, "cum": -4.8, "n": 1}, {"date": "2026-01-11", "profit": -1.6, "cum": -6.4, "n": 3}, {"date": "2026-01-15", "profit": 13.0, "cum": 6.6, "n": 3}, {"date": "2026-01-16", "profit": -5.4, "cum": 1.2, "n": 2}, {"date": "2026-01-17", "profit": -3.0, "cum": -1.8, "n": 3}, {"date": "2026-01-18", "profit": 19.36, "cum": 17.56, "n": 4}, {"date": "2026-01-19", "profit": -4.0, "cum": 13.56, "n": 1}, {"date": "2026-01-21", "profit": -7.8, "cum": 5.76, "n": 3}, {"date": "2026-01-22", "profit": -5.8, "cum": -0.04, "n": 2}, {"date": "2026-01-23", "profit": -7.4, "cum": -7.44, "n": 3}, {"date": "2026-01-24", "profit": 18.2, "cum": 10.76, "n": 3}, {"date": "2026-01-25", "profit": -1.2, "cum": 9.56, "n": 2}, {"date": "2026-01-28", "profit": 0, "cum": 9.56, "n": 0}, {"date": "2026-01-30", "profit": 0, "cum": 9.56, "n": 0}, {"date": "2026-01-31", "profit": 15.6, "cum": 25.16, "n": 1}, {"date": "2026-02-01", "profit": 0, "cum": 25.16, "n": 0}, {"date": "2026-02-04", "profit": 3.32, "cum": 28.48, "n": 2}, {"date": "2026-02-05", "profit": -5.38, "cum": 23.1, "n": 6}, {"date": "2026-02-06", "profit": 14.92, "cum": 38.02, "n": 1}, {"date": "2026-02-07", "profit": -2.0, "cum": 36.02, "n": 2}, {"date": "2026-02-08", "profit": -1.6, "cum": 34.42, "n": 1}, {"date": "2026-02-11", "profit": 46.36, "cum": 80.78, "n": 6}, {"date": "2026-02-12", "profit": 20.2, "cum": 100.98, "n": 2}, {"date": "2026-02-13", "profit": 2.4, "cum": 103.38, "n": 3}, {"date": "2026-02-14", "profit": 57.08, "cum": 160.46, "n": 5}, {"date": "2026-02-15", "profit": 19.7, "cum": 180.16, "n": 2}, {"date": "2026-02-17", "profit": 0, "cum": 180.16, "n": 0}, {"date": "2026-02-18", "profit": 22.0, "cum": 202.16, "n": 3}, {"date": "2026-02-19", "profit": 0, "cum": 202.16, "n": 0}, {"date": "2026-02-20", "profit": 27.04, "cum": 229.2, "n": 6}, {"date": "2026-02-21", "profit": 8.8, "cum": 238.0, "n": 1}, {"date": "2026-02-22", "profit": 10.6, "cum": 248.6, "n": 4}, {"date": "2026-02-26", "profit": 0, "cum": 248.6, "n": 0}, {"date": "2026-02-27", "profit": -7.8, "cum": 240.8, "n": 3}, {"date": "2026-02-28", "profit": 0, "cum": 240.8, "n": 0}]}, "wed_sat": {"n": 74, "wins": 35, "shows": 13, "blanks": 26, "win_rate": 47.3, "show_rate": 64.9, "wagered": 248.0, "returned": 543.64, "net": 295.64, "roi": 119.2, "daily_pl": [{"date": "2026-01-01", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-02", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-03", "profit": 5.7, "cum": 5.7, "n": 5}, {"date": "2026-01-04", "profit": 0, "cum": 5.7, "n": 0}, {"date": "2026-01-07", "profit": 15.4, "cum": 21.1, "n": 5}, {"date": "2026-01-08", "profit": 0, "cum": 21.1, "n": 0}, {"date": "2026-01-09", "profit": 0, "cum": 21.1, "n": 0}, {"date": "2026-01-10", "profit": 14.6, "cum": 35.7, "n": 3}, {"date": "2026-01-11", "profit": 0, "cum": 35.7, "n": 0}, {"date": "2026-01-15", "profit": 0, "cum": 35.7, "n": 0}, {"date": "2026-01-16", "profit": 0, "cum": 35.7, "n": 0}, {"date": "2026-01-17", "profit": -9.68, "cum": 26.02, "n": 6}, {"date": "2026-01-18", "profit": 0, "cum": 26.02, "n": 0}, {"date": "2026-01-19", "profit": 0, "cum": 26.02, "n": 0}, {"date": "2026-01-21", "profit": -9.8, "cum": 16.22, "n": 4}, {"date": "2026-01-22", "profit": 0, "cum": 16.22, "n": 0}, {"date": "2026-01-23", "profit": 0, "cum": 16.22, "n": 0}, {"date": "2026-01-24", "profit": 25.4, "cum": 41.62, "n": 4}, {"date": "2026-01-25", "profit": 0, "cum": 41.62, "n": 0}, {"date": "2026-01-28", "profit": 11.8, "cum": 53.42, "n": 1}, {"date": "2026-01-30", "profit": 0, "cum": 53.42, "n": 0}, {"date": "2026-01-31", "profit": 11.6, "cum": 65.02, "n": 2}, {"date": "2026-02-01", "profit": 0, "cum": 65.02, "n": 0}, {"date": "2026-02-04", "profit": 4.4, "cum": 69.42, "n": 3}, {"date": "2026-02-05", "profit": 0, "cum": 69.42, "n": 0}, {"date": "2026-02-06", "profit": 0, "cum": 69.42, "n": 0}, {"date": "2026-02-07", "profit": 6.4, "cum": 75.82, "n": 3}, {"date": "2026-02-08", "profit": 0, "cum": 75.82, "n": 0}, {"date": "2026-02-11", "profit": 60.86, "cum": 136.68, "n": 9}, {"date": "2026-02-12", "profit": 0, "cum": 136.68, "n": 0}, {"date": "2026-02-13", "profit": 0, "cum": 136.68, "n": 0}, {"date": "2026-02-14", "profit": 72.68, "cum": 209.36, "n": 8}, {"date": "2026-02-15", "profit": 0, "cum": 209.36, "n": 0}, {"date": "2026-02-17", "profit": 0, "cum": 209.36, "n": 0}, {"date": "2026-02-18", "profit": 23.4, "cum": 232.76, "n": 4}, {"date": "2026-02-19", "profit": 0, "cum": 232.76, "n": 0}, {"date": "2026-02-20", "profit": 0, "cum": 232.76, "n": 0}, {"date": "2026-02-21", "profit": 66.68, "cum": 299.44, "n": 9}, {"date": "2026-02-22", "profit": 0, "cum": 299.44, "n": 0}, {"date": "2026-02-26", "profit": 0, "cum": 299.44, "n": 0}, {"date": "2026-02-27", "profit": 0, "cum": 299.44, "n": 0}, {"date": "2026-02-28", "profit": -3.8, "cum": 295.64, "n": 8}]}, "rank_6plus": {"n": 31, "wins": 14, "shows": 6, "blanks": 11, "win_rate": 45.2, "show_rate": 64.5, "wagered": 84.0, "returned": 253.5, "net": 169.5, "roi": 201.8, "daily_pl": [{"date": "2026-01-01", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-02", "profit": 0.4, "cum": 0.4, "n": 2}, {"date": "2026-01-03", "profit": 0, "cum": 0.4, "n": 0}, {"date": "2026-01-04", "profit": 0, "cum": 0.4, "n": 0}, {"date": "2026-01-07", "profit": 0, "cum": 0.4, "n": 0}, {"date": "2026-01-08", "profit": 0, "cum": 0.4, "n": 0}, {"date": "2026-01-09", "profit": -2.0, "cum": -1.6, "n": 1}, {"date": "2026-01-10", "profit": 16.8, "cum": 15.2, "n": 1}, {"date": "2026-01-11", "profit": 2.4, "cum": 17.6, "n": 2}, {"date": "2026-01-15", "profit": 0, "cum": 17.6, "n": 0}, {"date": "2026-01-16", "profit": -2.0, "cum": 15.6, "n": 1}, {"date": "2026-01-17", "profit": -2.0, "cum": 13.6, "n": 1}, {"date": "2026-01-18", "profit": 0, "cum": 13.6, "n": 0}, {"date": "2026-01-19", "profit": 0, "cum": 13.6, "n": 0}, {"date": "2026-01-21", "profit": 0, "cum": 13.6, "n": 0}, {"date": "2026-01-22", "profit": 2.56, "cum": 16.16, "n": 1}, {"date": "2026-01-23", "profit": 0.0, "cum": 16.16, "n": 3}, {"date": "2026-01-24", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-01-25", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-01-28", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-01-30", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-01-31", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-02-01", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-02-04", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-02-05", "profit": 4.6, "cum": 20.76, "n": 1}, {"date": "2026-02-06", "profit": 2.2, "cum": 22.96, "n": 1}, {"date": "2026-02-07", "profit": 0, "cum": 22.96, "n": 0}, {"date": "2026-02-08", "profit": 0, "cum": 22.96, "n": 0}, {"date": "2026-02-11", "profit": 32.96, "cum": 55.92, "n": 4}, {"date": "2026-02-12", "profit": -4.0, "cum": 51.92, "n": 1}, {"date": "2026-02-13", "profit": 0, "cum": 51.92, "n": 0}, {"date": "2026-02-14", "profit": 9.0, "cum": 60.92, "n": 1}, {"date": "2026-02-15", "profit": 16.2, "cum": 77.12, "n": 1}, {"date": "2026-02-17", "profit": 11.8, "cum": 88.92, "n": 1}, {"date": "2026-02-18", "profit": 0, "cum": 88.92, "n": 0}, {"date": "2026-02-19", "profit": 20.38, "cum": 109.3, "n": 1}, {"date": "2026-02-20", "profit": 15.0, "cum": 124.3, "n": 2}, {"date": "2026-02-21", "profit": 21.0, "cum": 145.3, "n": 2}, {"date": "2026-02-22", "profit": -2.0, "cum": 143.3, "n": 1}, {"date": "2026-02-26", "profit": 0, "cum": 143.3, "n": 0}, {"date": "2026-02-27", "profit": 12.0, "cum": 155.3, "n": 1}, {"date": "2026-02-28", "profit": 14.2, "cum": 169.5, "n": 2}]}, "rank_6_odds_under10": {"n": 11, "wins": 9, "shows": 0, "blanks": 2, "win_rate": 81.8, "show_rate": 81.8, "wagered": 44.0, "returned": 164.04, "net": 120.04, "roi": 272.8, "daily_pl": [{"date": "2026-01-01", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-02", "profit": -4.0, "cum": -4.0, "n": 1}, {"date": "2026-01-03", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-04", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-07", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-08", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-09", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-10", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-11", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-15", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-16", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-17", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-18", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-19", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-21", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-22", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-23", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-24", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-25", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-28", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-30", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-31", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-01", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-04", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-05", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-06", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-07", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-08", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-11", "profit": 29.66, "cum": 25.66, "n": 2}, {"date": "2026-02-12", "profit": -4.0, "cum": 21.66, "n": 1}, {"date": "2026-02-13", "profit": 0, "cum": 21.66, "n": 0}, {"date": "2026-02-14", "profit": 0, "cum": 21.66, "n": 0}, {"date": "2026-02-15", "profit": 16.2, "cum": 37.86, "n": 1}, {"date": "2026-02-17", "profit": 11.8, "cum": 49.66, "n": 1}, {"date": "2026-02-18", "profit": 0, "cum": 49.66, "n": 0}, {"date": "2026-02-19", "profit": 20.38, "cum": 70.04, "n": 1}, {"date": "2026-02-20", "profit": 10.4, "cum": 80.44, "n": 1}, {"date": "2026-02-21", "profit": 11.4, "cum": 91.84, "n": 1}, {"date": "2026-02-22", "profit": 0, "cum": 91.84, "n": 0}, {"date": "2026-02-26", "profit": 0, "cum": 91.84, "n": 0}, {"date": "2026-02-27", "profit": 12.0, "cum": 103.84, "n": 1}, {"date": "2026-02-28", "profit": 16.2, "cum": 120.04, "n": 1}]}, "claiming_only": {"n": 141, "wins": 48, "shows": 41, "blanks": 52, "win_rate": 34.0, "show_rate": 63.1, "wagered": 508.0, "returned": 887.44, "net": 379.44, "roi": 74.7, "daily_pl": [{"date": "2026-01-01", "profit": -2.4, "cum": -2.4, "n": 4}, {"date": "2026-01-02", "profit": -9.54, "cum": -11.94, "n": 4}, {"date": "2026-01-03", "profit": 7.7, "cum": -4.24, "n": 4}, {"date": "2026-01-04", "profit": -8.0, "cum": -12.24, "n": 2}, {"date": "2026-01-07", "profit": 13.8, "cum": 1.56, "n": 4}, {"date": "2026-01-08", "profit": -1.8, "cum": -0.24, "n": 1}, {"date": "2026-01-09", "profit": 13.2, "cum": 12.96, "n": 5}, {"date": "2026-01-10", "profit": 16.8, "cum": 29.76, "n": 1}, {"date": "2026-01-11", "profit": -6.4, "cum": 23.36, "n": 5}, {"date": "2026-01-15", "profit": 9.4, "cum": 32.76, "n": 5}, {"date": "2026-01-16", "profit": -18.2, "cum": 14.56, "n": 7}, {"date": "2026-01-17", "profit": -8.0, "cum": 6.56, "n": 3}, {"date": "2026-01-18", "profit": 16.56, "cum": 23.12, "n": 5}, {"date": "2026-01-19", "profit": -6.0, "cum": 17.12, "n": 2}, {"date": "2026-01-21", "profit": -1.8, "cum": 15.32, "n": 2}, {"date": "2026-01-22", "profit": -8.38, "cum": 6.94, "n": 4}, {"date": "2026-01-23", "profit": -8.64, "cum": -1.7, "n": 7}, {"date": "2026-01-24", "profit": 4.4, "cum": 2.7, "n": 2}, {"date": "2026-01-25", "profit": -1.2, "cum": 1.5, "n": 2}, {"date": "2026-01-28", "profit": 11.8, "cum": 13.3, "n": 1}, {"date": "2026-01-30", "profit": 8.0, "cum": 21.3, "n": 1}, {"date": "2026-01-31", "profit": -4.0, "cum": 17.3, "n": 1}, {"date": "2026-02-01", "profit": 0, "cum": 17.3, "n": 0}, {"date": "2026-02-04", "profit": -2.92, "cum": 14.38, "n": 2}, {"date": "2026-02-05", "profit": -6.5, "cum": 7.88, "n": 6}, {"date": "2026-02-06", "profit": 3.6, "cum": 11.48, "n": 2}, {"date": "2026-02-07", "profit": 8.4, "cum": 19.88, "n": 1}, {"date": "2026-02-08", "profit": -1.6, "cum": 18.28, "n": 1}, {"date": "2026-02-11", "profit": 47.5, "cum": 65.78, "n": 6}, {"date": "2026-02-12", "profit": 37.4, "cum": 103.18, "n": 6}, {"date": "2026-02-13", "profit": 40.08, "cum": 143.26, "n": 5}, {"date": "2026-02-14", "profit": 56.48, "cum": 199.74, "n": 5}, {"date": "2026-02-15", "profit": 57.46, "cum": 257.2, "n": 6}, {"date": "2026-02-17", "profit": 0, "cum": 257.2, "n": 0}, {"date": "2026-02-18", "profit": 12.8, "cum": 270.0, "n": 3}, {"date": "2026-02-19", "profit": 20.38, "cum": 290.38, "n": 1}, {"date": "2026-02-20", "profit": 21.66, "cum": 312.04, "n": 4}, {"date": "2026-02-21", "profit": 54.4, "cum": 366.44, "n": 6}, {"date": "2026-02-22", "profit": 14.6, "cum": 381.04, "n": 3}, {"date": "2026-02-26", "profit": -6.0, "cum": 375.04, "n": 2}, {"date": "2026-02-27", "profit": 0.2, "cum": 375.24, "n": 5}, {"date": "2026-02-28", "profit": 4.2, "cum": 379.44, "n": 5}]}, "odds_5_8": {"n": 44, "wins": 20, "shows": 7, "blanks": 17, "win_rate": 45.5, "show_rate": 61.4, "wagered": 176.0, "returned": 402.04, "net": 226.04, "roi": 128.4, "daily_pl": [{"date": "2026-01-01", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-02", "profit": -7.54, "cum": -7.54, "n": 3}, {"date": "2026-01-03", "profit": 6.0, "cum": -1.54, "n": 1}, {"date": "2026-01-04", "profit": -4.0, "cum": -5.54, "n": 1}, {"date": "2026-01-07", "profit": 0, "cum": -5.54, "n": 0}, {"date": "2026-01-08", "profit": 0, "cum": -5.54, "n": 0}, {"date": "2026-01-09", "profit": -4.0, "cum": -9.54, "n": 1}, {"date": "2026-01-10", "profit": 0, "cum": -9.54, "n": 0}, {"date": "2026-01-11", "profit": 0, "cum": -9.54, "n": 0}, {"date": "2026-01-15", "profit": 1.0, "cum": -8.54, "n": 1}, {"date": "2026-01-16", "profit": 0, "cum": -8.54, "n": 0}, {"date": "2026-01-17", "profit": 0, "cum": -8.54, "n": 0}, {"date": "2026-01-18", "profit": 18.0, "cum": 9.46, "n": 1}, {"date": "2026-01-19", "profit": 0, "cum": 9.46, "n": 0}, {"date": "2026-01-21", "profit": 0, "cum": 9.46, "n": 0}, {"date": "2026-01-22", "profit": -4.0, "cum": 5.46, "n": 1}, {"date": "2026-01-23", "profit": 0, "cum": 5.46, "n": 0}, {"date": "2026-01-24", "profit": 13.8, "cum": 19.26, "n": 1}, {"date": "2026-01-25", "profit": -1.2, "cum": 18.06, "n": 2}, {"date": "2026-01-28", "profit": 11.8, "cum": 29.86, "n": 1}, {"date": "2026-01-30", "profit": 0, "cum": 29.86, "n": 0}, {"date": "2026-01-31", "profit": 11.6, "cum": 41.46, "n": 2}, {"date": "2026-02-01", "profit": 0, "cum": 41.46, "n": 0}, {"date": "2026-02-04", "profit": -4.0, "cum": 37.46, "n": 1}, {"date": "2026-02-05", "profit": -13.6, "cum": 23.86, "n": 4}, {"date": "2026-02-06", "profit": 14.92, "cum": 38.78, "n": 1}, {"date": "2026-02-07", "profit": 0, "cum": 38.78, "n": 0}, {"date": "2026-02-08", "profit": 0, "cum": 38.78, "n": 0}, {"date": "2026-02-11", "profit": 38.3, "cum": 77.08, "n": 4}, {"date": "2026-02-12", "profit": 29.4, "cum": 106.48, "n": 2}, {"date": "2026-02-13", "profit": 11.88, "cum": 118.36, "n": 2}, {"date": "2026-02-14", "profit": 41.2, "cum": 159.56, "n": 3}, {"date": "2026-02-15", "profit": 33.52, "cum": 193.08, "n": 2}, {"date": "2026-02-17", "profit": 11.8, "cum": 204.88, "n": 1}, {"date": "2026-02-18", "profit": 0, "cum": 204.88, "n": 0}, {"date": "2026-02-19", "profit": 0, "cum": 204.88, "n": 0}, {"date": "2026-02-20", "profit": 0, "cum": 204.88, "n": 0}, {"date": "2026-02-21", "profit": 28.96, "cum": 233.84, "n": 2}, {"date": "2026-02-22", "profit": -4.0, "cum": 229.84, "n": 1}, {"date": "2026-02-26", "profit": -8.0, "cum": 221.84, "n": 2}, {"date": "2026-02-27", "profit": -4.0, "cum": 217.84, "n": 1}, {"date": "2026-02-28", "profit": 8.2, "cum": 226.04, "n": 3}]}, "v7_wed_sat": {"n": 31, "wins": 19, "shows": 5, "blanks": 7, "win_rate": 61.3, "show_rate": 77.4, "wagered": 110.0, "returned": 276.36, "net": 166.36, "roi": 151.2, "daily_pl": [{"date": "2026-01-01", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-02", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-03", "profit": 6.0, "cum": 6.0, "n": 1}, {"date": "2026-01-04", "profit": 0, "cum": 6.0, "n": 0}, {"date": "2026-01-07", "profit": 0, "cum": 6.0, "n": 0}, {"date": "2026-01-08", "profit": 0, "cum": 6.0, "n": 0}, {"date": "2026-01-09", "profit": 0, "cum": 6.0, "n": 0}, {"date": "2026-01-10", "profit": 1.8, "cum": 7.8, "n": 1}, {"date": "2026-01-11", "profit": 0, "cum": 7.8, "n": 0}, {"date": "2026-01-15", "profit": 0, "cum": 7.8, "n": 0}, {"date": "2026-01-16", "profit": 0, "cum": 7.8, "n": 0}, {"date": "2026-01-17", "profit": -3.0, "cum": 4.8, "n": 3}, {"date": "2026-01-18", "profit": 0, "cum": 4.8, "n": 0}, {"date": "2026-01-19", "profit": 0, "cum": 4.8, "n": 0}, {"date": "2026-01-21", "profit": -7.8, "cum": -3.0, "n": 3}, {"date": "2026-01-22", "profit": 0, "cum": -3.0, "n": 0}, {"date": "2026-01-23", "profit": 0, "cum": -3.0, "n": 0}, {"date": "2026-01-24", "profit": 18.2, "cum": 15.2, "n": 3}, {"date": "2026-01-25", "profit": 0, "cum": 15.2, "n": 0}, {"date": "2026-01-28", "profit": 0, "cum": 15.2, "n": 0}, {"date": "2026-01-30", "profit": 0, "cum": 15.2, "n": 0}, {"date": "2026-01-31", "profit": 15.6, "cum": 30.8, "n": 1}, {"date": "2026-02-01", "profit": 0, "cum": 30.8, "n": 0}, {"date": "2026-02-04", "profit": 3.32, "cum": 34.12, "n": 2}, {"date": "2026-02-05", "profit": 0, "cum": 34.12, "n": 0}, {"date": "2026-02-06", "profit": 0, "cum": 34.12, "n": 0}, {"date": "2026-02-07", "profit": -2.0, "cum": 32.12, "n": 2}, {"date": "2026-02-08", "profit": 0, "cum": 32.12, "n": 0}, {"date": "2026-02-11", "profit": 46.36, "cum": 78.48, "n": 6}, {"date": "2026-02-12", "profit": 0, "cum": 78.48, "n": 0}, {"date": "2026-02-13", "profit": 0, "cum": 78.48, "n": 0}, {"date": "2026-02-14", "profit": 57.08, "cum": 135.56, "n": 5}, {"date": "2026-02-15", "profit": 0, "cum": 135.56, "n": 0}, {"date": "2026-02-17", "profit": 0, "cum": 135.56, "n": 0}, {"date": "2026-02-18", "profit": 22.0, "cum": 157.56, "n": 3}, {"date": "2026-02-19", "profit": 0, "cum": 157.56, "n": 0}, {"date": "2026-02-20", "profit": 0, "cum": 157.56, "n": 0}, {"date": "2026-02-21", "profit": 8.8, "cum": 166.36, "n": 1}, {"date": "2026-02-22", "profit": 0, "cum": 166.36, "n": 0}, {"date": "2026-02-26", "profit": 0, "cum": 166.36, "n": 0}, {"date": "2026-02-27", "profit": 0, "cum": 166.36, "n": 0}, {"date": "2026-02-28", "profit": 0, "cum": 166.36, "n": 0}]}}, "factors": {"odds_buckets": [{"label": "3/1\u20135/1", "n": 99, "win_rate": 35.4, "roi": 47.0}, {"label": "5/1\u20138/1", "n": 44, "win_rate": 45.5, "roi": 128.4}, {"label": "8/1\u201312/1", "n": 28, "win_rate": 17.9, "roi": 35.5}, {"label": "12/1\u201320/1", "n": 22, "win_rate": 27.3, "roi": 29.5}, {"label": "20/1+", "n": 13, "win_rate": 23.1, "roi": 160.0}], "fig_buckets": [{"label": "80\u201389", "n": 7, "win_rate": 14.3, "roi": -2.3}, {"label": "90\u201399", "n": 39, "win_rate": 28.2, "roi": 52.1}, {"label": "100\u2013109", "n": 72, "win_rate": 37.5, "roi": 94.8}, {"label": "110+", "n": 86, "win_rate": 34.9, "roi": 60.4}], "gap_buckets": [{"label": "5\u20137pt", "n": 94, "win_rate": 30.9, "roi": 64.5}, {"label": "8\u201311pt", "n": 57, "win_rate": 42.1, "roi": 102.0}, {"label": "12\u201319pt", "n": 38, "win_rate": 31.6, "roi": 25.9}, {"label": "20pt+", "n": 17, "win_rate": 23.5, "roi": 73.6}], "field_size": [{"label": "2\u20134", "n": 22, "win_rate": 27.3, "roi": 24.1}, {"label": "5\u20136", "n": 73, "win_rate": 37.0, "roi": 65.5}, {"label": "7\u20138", "n": 75, "win_rate": 36.0, "roi": 81.3}, {"label": "9+", "n": 36, "win_rate": 25.0, "roi": 74.0}], "dow": [{"label": "Mon", "n": 3, "win_rate": 0.0, "roi": -74.0}, {"label": "Tue", "n": 1, "win_rate": 100.0, "roi": 295.0}, {"label": "Wed", "n": 26, "win_rate": 46.2, "roi": 117.8}, {"label": "Thu", "n": 43, "win_rate": 18.6, "roi": 26.9}, {"label": "Fri", "n": 55, "win_rate": 27.3, "roi": 43.1}, {"label": "Sat", "n": 48, "win_rate": 47.9, "roi": 120.0}, {"label": "Sun", "n": 30, "win_rate": 33.3, "roi": 64.4}], "ml_rank": [{"label": "ML Fav", "n": 22, "win_rate": 36.4, "roi": 60.0}, {"label": "2nd", "n": 54, "win_rate": 33.3, "roi": 56.8}, {"label": "3rd", "n": 43, "win_rate": 34.9, "roi": 49.7}, {"label": "4th-5th", "n": 56, "win_rate": 25.0, "roi": 40.7}, {"label": "6th+", "n": 31, "win_rate": 45.2, "roi": 201.8}], "race_type": [{"label": "Claiming", "n": 141, "win_rate": 34.0, "roi": 74.7}, {"label": "AOC", "n": 32, "win_rate": 40.6, "roi": 61.0}, {"label": "Allow.", "n": 33, "win_rate": 24.2, "roi": 46.4}], "track": [{"label": "AQU", "n": 45, "win_rate": 40.0, "roi": 80.5}, {"label": "CT", "n": 37, "win_rate": 18.9, "roi": 33.0}, {"label": "FG", "n": 24, "win_rate": 33.3, "roi": 57.3}, {"label": "GP", "n": 11, "win_rate": 36.4, "roi": 86.0}, {"label": "LAU", "n": 28, "win_rate": 32.1, "roi": 64.3}, {"label": "OAK", "n": 15, "win_rate": 46.7, "roi": 107.2}, {"label": "SA", "n": 14, "win_rate": 28.6, "roi": 24.0}, {"label": "TBD", "n": 30, "win_rate": 36.7, "roi": 100.0}]}};
+
+// ── STRATEGY CONFIG ──────────────────────────────────────────────────────────
+const STRATEGY_META = {
+  v1_baseline:         { name: 'V1 Baseline',         desc: 'All qualifying bets — full ruleset, no extra filters', color: '#c9a84c', badge: 'badge-gold', badgeText: 'FOUNDATION' },
+  v7_refined:          { name: 'V7 Refined',           desc: 'Fig ≥ 90 · Gap ≥ 8pt · Skip 8/1–12/1 dead zone',     color: '#5b9cf6', badge: 'badge-blue', badgeText: 'REFINED' },
+  wed_sat:             { name: 'Wed + Sat Cards',      desc: 'Major cards only — Wednesday and Saturday races',     color: '#e8c870', badge: 'badge-gold', badgeText: 'SCHEDULE' },
+  rank_6plus:          { name: 'Rank 6+ Divergence',   desc: 'Top-fig horse is 6th+ in ML betting order',          color: '#3ddc97', badge: 'badge-green', badgeText: 'ANOMALY' },
+  rank_6_odds_under10: { name: 'Rank 6+ Under 10/1',   desc: 'Strong divergence, priced under 10/1 at post',       color: '#3ddc97', badge: 'badge-green', badgeText: 'BEST EDGE' },
+  claiming_only:       { name: 'Claiming Only',         desc: 'Claiming races exclusively — most reliable form',    color: '#a78bfa', badge: 'badge-blue', badgeText: 'CLASS' },
+  odds_5_8:            { name: '5/1–8/1 Zone',          desc: 'Only bet horses going off between 5/1 and 8/1',     color: '#f97316', badge: 'badge-gold', badgeText: 'ODDS' },
+  v7_wed_sat:          { name: 'V7 + Wed/Sat',          desc: 'Refined rules on major cards only',                 color: '#e8c870', badge: 'badge-gold', badgeText: 'COMBO' },
+};
+
+// Active strategies on chart
+const activeStrategies = new Set(['v1_baseline', 'v7_refined', 'rank_6plus']);
+
+// ── RENDER STRATEGY CARDS ───────────────────────────────────────────────────
+function renderCards() {
+  const grid = document.getElementById('strategyGrid');
+  const keys = Object.keys(RAW.strategies);
+  grid.innerHTML = '';
+
+  keys.forEach((key, i) => {
+    const s = RAW.strategies[key];
+    const meta = STRATEGY_META[key] || { name: key, color: '#888', badge: 'badge-blue', badgeText: 'SYSTEM', desc: '' };
+    const roiClass = s.roi >= 0 ? 'roi-pos' : 'roi-neg';
+    const roiSign = s.roi >= 0 ? '+' : '';
+    const winPct = s.win_rate;
+    const showPct = s.show_rate - s.win_rate;
+    const blankPct = 100 - s.show_rate;
+    const isActive = activeStrategies.has(key);
+
+    const card = document.createElement('div');
+    card.className = `card fade-in${isActive ? ' active' : ''}`;
+    card.style.setProperty('--card-accent', meta.color);
+    card.dataset.key = key;
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-name">${meta.name}</div>
+        <div class="card-badge ${meta.badge}">${meta.badgeText}</div>
+      </div>
+      <div class="card-roi ${roiClass}">${roiSign}${s.roi}%</div>
+      <div class="card-net">Net ${s.net >= 0 ? '+' : ''}$${s.net.toFixed(2)} on $${s.wagered.toFixed(0)} wagered</div>
+      <div class="card-stats">
+        <div class="stat">
+          <div class="stat-val">${s.n}</div>
+          <div class="stat-lbl">Bets</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">${s.win_rate}%</div>
+          <div class="stat-lbl">Win</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">${s.show_rate}%</div>
+          <div class="stat-lbl">Show</div>
+        </div>
+      </div>
+      <div class="outcome-bar">
+        <div class="bar-win" style="width:${winPct}%"></div>
+        <div class="bar-show" style="width:${showPct}%"></div>
+        <div class="bar-blank" style="width:${blankPct}%"></div>
+      </div>
+    `;
+    card.addEventListener('click', () => toggleStrategy(key, card));
+    grid.appendChild(card);
+  });
+}
+
+function toggleStrategy(key, card) {
+  if (activeStrategies.has(key)) {
+    if (activeStrategies.size === 1) return; // keep at least one
+    activeStrategies.delete(key);
+    card.classList.remove('active');
+  } else {
+    activeStrategies.add(key);
+    card.classList.add('active');
+  }
+  renderChart();
+  renderLegend();
+}
+
+// ── EQUITY CHART ─────────────────────────────────────────────────────────────
+const canvas = document.getElementById('equityChart');
+const ctx = canvas.getContext('2d');
+let hoveredPoint = null;
+
+function getCanvasSize() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const w = rect.width - 48;
+  const h = parseInt(getComputedStyle(canvas).height) || 320;
+  return { w, h, dpr };
+}
+
+function renderChart() {
+  const { w, h, dpr } = getCanvasSize();
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.scale(dpr, dpr);
+
+  const pad = { top: 20, right: 20, bottom: 36, left: 64 };
+  const cw = w - pad.left - pad.right;
+  const ch = h - pad.top - pad.bottom;
+
+  const dates = RAW.dates;
+  const N = dates.length;
+
+  // Find global min/max across active strategies
+  let globalMin = 0, globalMax = 0;
+  for (const key of activeStrategies) {
+    const daily = RAW.strategies[key].daily_pl;
+    for (const d of daily) {
+      globalMin = Math.min(globalMin, d.cum);
+      globalMax = Math.max(globalMax, d.cum);
+    }
+  }
+  const pad_y = (globalMax - globalMin) * 0.08 || 20;
+  const yMin = globalMin - pad_y;
+  const yMax = globalMax + pad_y;
+  const yRange = yMax - yMin || 1;
+
+  const xOf = (i) => pad.left + (i / (N - 1)) * cw;
+  const yOf = (v) => pad.top + ch - ((v - yMin) / yRange) * ch;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  const ySteps = 5;
+  for (let i = 0; i <= ySteps; i++) {
+    const v = yMin + (yRange / ySteps) * i;
+    const y = yOf(v);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
+    // Y label
+    ctx.fillStyle = 'rgba(136,153,170,0.7)';
+    ctx.font = '10px DM Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText((v >= 0 ? '+' : '') + '$' + v.toFixed(0), pad.left - 8, y + 4);
+  }
+
+  // Zero line
+  const zeroY = yOf(0);
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.left, zeroY); ctx.lineTo(pad.left + cw, zeroY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // X axis labels (monthly)
+  ctx.fillStyle = 'rgba(136,153,170,0.7)';
+  ctx.font = '10px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  dates.forEach((d, i) => {
+    if (d.endsWith('-01') || d.endsWith('-15')) {
+      const label = d.slice(5); // MM-DD
+      ctx.fillText(label, xOf(i), h - pad.bottom + 16);
+    }
+  });
+
+  // Draw each active strategy
+  const keys = [...activeStrategies];
+  keys.forEach((key) => {
+    const meta = STRATEGY_META[key] || { color: '#888' };
+    const daily = RAW.strategies[key].daily_pl;
+    const color = meta.color;
+
+    // Build path
+    ctx.beginPath();
+    dates.forEach((d, i) => {
+      const point = daily.find(p => p.date === d);
+      const cum = point ? point.cum : (i > 0 ? daily.slice(0, i).filter(p => p).pop()?.cum || 0 : 0);
+      if (i === 0) ctx.moveTo(xOf(i), yOf(cum));
+      else ctx.lineTo(xOf(i), yOf(cum));
+    });
+
+    // Fill
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = color;
+    ctx.lineTo(xOf(N-1), yOf(0));
+    ctx.lineTo(xOf(0), yOf(0));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Stroke
+    ctx.beginPath();
+    dates.forEach((d, i) => {
+      const point = daily.find(p => p.date === d);
+      const cum = point ? point.cum : 0;
+      if (i === 0) ctx.moveTo(xOf(i), yOf(cum));
+      else ctx.lineTo(xOf(i), yOf(cum));
+    });
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Final dot
+    const last = daily[daily.length - 1];
+    if (last) {
+      const lastIdx = dates.indexOf(last.date);
+      const lx = xOf(lastIdx); const ly = yOf(last.cum);
+      ctx.beginPath();
+      ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#0a0c0f';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  });
+}
+
+function renderLegend() {
+  const legend = document.getElementById('chartLegend');
+  legend.innerHTML = '';
+  Object.keys(RAW.strategies).forEach(key => {
+    const s = RAW.strategies[key];
+    const meta = STRATEGY_META[key] || { name: key, color: '#888' };
+    const isHidden = !activeStrategies.has(key);
+    const item = document.createElement('div');
+    item.className = `legend-item${isHidden ? ' hidden' : ''}`;
+    item.innerHTML = `
+      <div class="legend-dot" style="background:${meta.color}"></div>
+      <span>${meta.name}</span>
+      <span class="legend-roi" style="color:${meta.color}">${s.roi >= 0 ? '+' : ''}${s.roi}%</span>
+    `;
+    item.addEventListener('click', () => {
+      const card = document.querySelector(`.card[data-key="${key}"]`);
+      if (card) toggleStrategy(key, card);
+    });
+    legend.appendChild(item);
+  });
+}
+
+// ── TOOLTIP ON HOVER ─────────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const { w } = getCanvasSize();
+  const pad = { left: 64, right: 20 };
+  const cw = w - pad.left - pad.right;
+  const N = RAW.dates.length;
+  const idx = Math.round(((mx - pad.left) / cw) * (N - 1));
+  if (idx < 0 || idx >= N) { hideTooltip(); return; }
+
+  const date = RAW.dates[idx];
+  const tooltip = document.getElementById('tooltip');
+  let html = `<div class="tooltip-date">${date}</div>`;
+
+  for (const key of activeStrategies) {
+    const meta = STRATEGY_META[key] || { name: key, color: '#888' };
+    const point = RAW.strategies[key].daily_pl.find(p => p.date === date);
+    if (point) {
+      const sign = point.cum >= 0 ? '+' : '';
+      html += `<div class="tooltip-row"><span style="color:${meta.color}">${meta.name.split(' ').slice(0,2).join(' ')}</span><span>${sign}$${point.cum.toFixed(2)}</span></div>`;
+    }
+  }
+
+  tooltip.innerHTML = html;
+  tooltip.style.display = 'block';
+  tooltip.style.left = (e.clientX + 16) + 'px';
+  tooltip.style.top = (e.clientY - 10) + 'px';
+});
+
+canvas.addEventListener('mouseleave', hideTooltip);
+function hideTooltip() {
+  document.getElementById('tooltip').style.display = 'none';
+}
+
+// ── FACTOR CHARTS ─────────────────────────────────────────────────────────────
+function renderFactors() {
+  const grid = document.getElementById('factorsGrid');
+  const factorTitles = {
+    odds_buckets: 'ROI by Odds Range',
+    fig_buckets: 'ROI by Top Speed Figure',
+    gap_buckets: 'ROI by Fig Gap to 2nd Best',
+    field_size: 'ROI by Field Size',
+    dow: 'ROI by Day of Week',
+    ml_rank: 'ROI by ML Betting Rank',
+    race_type: 'ROI by Race Type',
+    track: 'ROI by Track',
+  };
+
+  for (const [key, rows] of Object.entries(RAW.factors)) {
+    if (!rows.length) continue;
+    const maxROI = Math.max(...rows.map(r => Math.abs(r.roi)), 10);
+
+    const card = document.createElement('div');
+    card.className = 'factor-card';
+    card.innerHTML = `<div class="factor-title">${factorTitles[key] || key}</div>`;
+
+    rows.forEach(row => {
+      const pct = Math.min(Math.abs(row.roi) / maxROI * 100, 100);
+      const isNeg = row.roi < 0;
+      const roiColor = isNeg ? 'var(--red)' : (row.roi > 100 ? 'var(--gold2)' : 'var(--text)');
+      const barClass = isNeg ? 'factor-bar-neg' : 'factor-bar-roi';
+      card.innerHTML += `
+        <div class="factor-row">
+          <div class="factor-label">${row.label}</div>
+          <div class="factor-bar-wrap">
+            <div class="factor-bar ${barClass}" style="width:${pct}%"></div>
+          </div>
+          <div class="factor-roi-val" style="color:${roiColor}">${row.roi >= 0 ? '+' : ''}${row.roi}%</div>
+          <div class="factor-n">n=${row.n}</div>
+        </div>
+      `;
+    });
+
+    grid.appendChild(card);
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderCards();
+renderLegend();
+renderFactors();
+
+// Delay chart render until layout is complete
+requestAnimationFrame(() => {
+  setTimeout(() => {
+    renderChart();
+  }, 100);
+});
+
+window.addEventListener('resize', () => {
+  renderChart();
+});
+</script>
+</body>
+</html>
