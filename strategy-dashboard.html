@@ -1,822 +1,1150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fig Anomaly System — Live Backtest</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #0d0f12;
-            --panel-bg: #16191d;
-            --panel-border: #2c2f33;
-            --text-main: #e2e8f0;
-            --text-muted: #8b949e;
-            --gold: #d4af37;
-            --gold-dim: rgba(212, 175, 55, 0.2);
-            --gold-hover: #f1c40f;
-            --green: #2ecc71;
-            --green-dim: rgba(46, 204, 113, 0.2);
-            --red: #e74c3c;
-            --red-dim: rgba(231, 76, 60, 0.2);
-            --yellow: #f39c12;
-            --gray-dash: #5c6370;
-            --font-heading: 'Playfair Display', serif;
-            --font-mono: 'Space Mono', monospace;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fig Anomaly System — Live Backtest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #09090c;
+      --bg2:       #0f1115;
+      --panel:     #13161b;
+      --panel2:    #1a1d24;
+      --border:    #252830;
+      --border2:   #2e3240;
+      --text:      #dde3ed;
+      --muted:     #6b7585;
+      --muted2:    #8b97ab;
+      --gold:      #c9a227;
+      --gold2:     #e8bc3a;
+      --gold-glow: rgba(201,162,39,0.18);
+      --gold-dim:  rgba(201,162,39,0.12);
+      --green:     #27c98f;
+      --green-dim: rgba(39,201,143,0.14);
+      --red:       #e0524a;
+      --red-dim:   rgba(224,82,74,0.14);
+      --amber:     #e89b2a;
+      --amber-dim: rgba(232,155,42,0.18);
+      --blue:      #4a8fe8;
+      --serif: 'Playfair Display', Georgia, serif;
+      --mono:  'Space Mono', 'Courier New', monospace;
+    }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: var(--font-mono);
-            line-height: 1.5;
-            padding: 20px;
-            font-size: 14px;
-        }
+    html { scroll-behavior: smooth; }
 
-        h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: 600; color: var(--gold); }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
 
-        /* Header */
-        .header {
-            text-align: center;
-            padding: 40px 20px;
-            border-bottom: 1px solid var(--gold-dim);
-        }
-        .header h1 { font-size: 2.5rem; letter-spacing: 1px; margin-bottom: 10px; }
-        .header p { color: var(--text-muted); font-size: 1rem; margin-bottom: 20px; }
-        .pills { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
-        .pill {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            color: var(--gold);
-        }
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
-        /* Panels */
-        .panel {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 8px;
-            padding: 24px;
-            position: relative;
-        }
-        .panel-header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .panel-title { font-size: 1.4rem; border-bottom: 1px solid var(--panel-border); padding-bottom: 10px; margin-bottom: 15px;}
+    /* ── Loading ── */
+    #loading-screen {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 999; gap: 20px;
+    }
+    #loading-screen h1 { font-family: var(--serif); color: var(--gold); font-size: 1.8rem; letter-spacing: 2px; }
+    .loading-bar-wrap { width: 240px; height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .loading-bar { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); border-radius: 2px; animation: slide 1.5s ease-in-out infinite; }
+    @keyframes slide { 0%{width:0;margin-left:0} 50%{width:100%;margin-left:0} 100%{width:0;margin-left:100%} }
+    .loading-sub { color: var(--muted); font-size: 0.78rem; }
 
-        /* Loading / Error */
-        #loader { text-align: center; padding: 100px; font-size: 1.2rem; color: var(--gold); }
-        #error { color: var(--red); text-align: center; padding: 50px; background: var(--red-dim); border-radius: 8px; display: none; }
+    /* ── Error ── */
+    #error-screen {
+      display: none; position: fixed; inset: 0; background: var(--bg);
+      align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+    }
+    #error-screen .err-icon { font-size: 3rem; }
+    #error-screen h2 { font-family: var(--serif); color: var(--red); }
+    #error-screen p { color: var(--muted); max-width: 440px; text-align: center; line-height: 1.8; }
+    #error-screen code { background: var(--panel); padding: 2px 8px; border-radius: 4px; color: var(--muted2); }
 
-        /* Proof Section */
-        .verdict-banner {
-            text-align: center; padding: 15px; border-radius: 4px; font-weight: bold; font-size: 1.2rem; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px;
-        }
-        .verdict-strong { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
-        .verdict-marginal { background: rgba(243, 156, 18, 0.2); color: var(--yellow); border: 1px solid var(--yellow); }
-        .verdict-none { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+    /* ── Layout ── */
+    #app { display: none; flex-direction: column; max-width: 1280px; margin: 0 auto; padding: 0 20px 60px; }
 
-        .proof-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-        @media(min-width: 768px) { .proof-grid { grid-template-columns: 2fr 1fr; } }
-        
-        .chart-container { position: relative; width: 100%; height: 250px; }
-        canvas { width: 100%; height: 100%; display: block; }
-        
-        .stat-group { margin-bottom: 15px; }
-        .stat-label { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; }
-        .stat-value { font-size: 1.2rem; color: var(--text-main); }
-        .stat-value.highlight { color: var(--gold); font-size: 1.4rem; }
+    /* ── Header ── */
+    .site-header {
+      padding: 48px 0 36px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+      text-align: center;
+      position: relative;
+    }
+    .site-header::before {
+      content: '';
+      position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+      width: 160px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+    .site-header .eyebrow {
+      font-size: 0.72rem; letter-spacing: 4px; color: var(--gold); text-transform: uppercase; margin-bottom: 12px;
+    }
+    .site-header h1 {
+      font-family: var(--serif); font-size: clamp(2rem, 5vw, 3.2rem);
+      color: var(--text); line-height: 1.15; margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--text) 40%, var(--gold2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .site-header .subtitle { color: var(--muted); font-size: 0.85rem; margin-bottom: 24px; }
+    .pills { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    .pill {
+      background: var(--panel); border: 1px solid var(--border2);
+      padding: 5px 14px; border-radius: 100px; font-size: 0.78rem; color: var(--muted2);
+      letter-spacing: 0.5px;
+    }
+    .pill strong { color: var(--gold2); }
 
-        /* Strategy Cards */
-        .strategy-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
-        @media(min-width: 768px) { .strategy-grid { grid-template-columns: repeat(3, 1fr); } }
-        
-        .strategy-card {
-            background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 6px; padding: 15px;
-            cursor: pointer; transition: all 0.2s ease;
-        }
-        .strategy-card:hover { border-color: var(--gold-dim); transform: translateY(-2px); }
-        .strategy-card.active { border-color: var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.15); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .card-title { font-size: 1.1rem; color: var(--gold); }
-        .card-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
-        
-        .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; }
-        .val-green { color: var(--green); }
-        .val-red { color: var(--red); }
+    /* ── Section titles ── */
+    .section-title {
+      font-family: var(--serif); font-size: 1.15rem; color: var(--gold);
+      margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-        /* Bankroll Stats */
-        .br-stats { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 15px; }
-        .br-stat-box { background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 4px; border-left: 3px solid var(--gold); }
-        
-        /* Factor Tabs */
-        .tabs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 15px; scrollbar-width: thin;}
-        .tab-btn {
-            background: transparent; color: var(--text-muted); border: 1px solid var(--panel-border);
-            padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: var(--font-mono); font-size: 0.85rem;
-            white-space: nowrap;
-        }
-        .tab-btn:hover { color: var(--text-main); border-color: var(--text-muted); }
-        .tab-btn.active { background: var(--gold-dim); color: var(--gold); border-color: var(--gold); }
+    /* ── Panel ── */
+    .panel {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 24px; position: relative; overflow: hidden;
+    }
+    .panel::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    }
 
-        /* Tooltip */
-        #tooltip {
-            position: absolute; background: rgba(13, 15, 18, 0.95); border: 1px solid var(--gold);
-            padding: 12px; border-radius: 4px; pointer-events: none; opacity: 0; transition: opacity 0.1s;
-            font-size: 0.8rem; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); width: max-content; max-width: 300px;
-        }
+    /* ── Strategy Grid ── */
+    .strategy-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 32px; }
+    @media(min-width: 640px)  { .strategy-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media(min-width: 1024px) { .strategy-grid { grid-template-columns: repeat(3, 1fr); } }
 
-        /* Heatmap Grid */
-        .heatmap-container { display: flex; flex-wrap: wrap; gap: 4px; }
-        .heat-cell { width: 16px; height: 16px; border-radius: 2px; background: var(--panel-border); cursor: crosshair; }
-        
-        .grid-2col { display: grid; grid-template-columns: 1fr; gap: 24px; }
-        @media(min-width: 768px) { .grid-2col { grid-template-columns: 1fr 1fr; } }
-    </style>
+    .strat-card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 18px;
+      cursor: pointer; transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .strat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+    .strat-card.active {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 1px var(--gold), 0 4px 30px var(--gold-glow);
+    }
+    .strat-card.active::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--gold2));
+    }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .card-name { font-family: var(--serif); font-size: 1rem; color: var(--text); line-height: 1.3; }
+    .card-desc { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .badge {
+      padding: 3px 9px; border-radius: 4px; font-size: 0.66rem; font-weight: bold;
+      letter-spacing: 0.8px; text-transform: uppercase; white-space: nowrap; flex-shrink: 0;
+    }
+    .badge-strong  { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green); }
+    .badge-marginal{ background: var(--amber-dim);  color: var(--amber);  border: 1px solid var(--amber); }
+    .badge-none    { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red);   }
+    .card-roi { font-size: 2rem; font-weight: bold; line-height: 1; margin-bottom: 12px; }
+    .card-roi.pos { color: var(--green); } .card-roi.neg { color: var(--red); }
+    .card-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+    .meta-item { font-size: 0.78rem; }
+    .meta-item .mk { color: var(--muted); } .meta-item .mv { color: var(--muted2); }
+
+    /* ── Proof Section ── */
+    .proof-banner {
+      padding: 14px 20px; border-radius: 8px; font-family: var(--serif);
+      font-size: 1.2rem; letter-spacing: 1.5px; text-align: center; margin-bottom: 20px;
+    }
+    .proof-banner.strong  { background: var(--green-dim); color: var(--green); border: 1px solid rgba(39,201,143,0.3); }
+    .proof-banner.marginal{ background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(232,155,42,0.3); }
+    .proof-banner.none    { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(224,82,74,0.3); }
+
+    .proof-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+    @media(min-width: 768px) { .proof-grid { grid-template-columns: 3fr 2fr; } }
+
+    .proof-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+    .pstat { background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .pstat .plabel { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; }
+    .pstat .pval   { font-size: 1.5rem; color: var(--text); }
+    .pstat .pval.gold { color: var(--gold2); }
+    .pstat .pval.green { color: var(--green); }
+
+    .proof-text { font-size: 0.83rem; color: var(--muted2); line-height: 1.8; padding: 14px; background: var(--bg2); border-radius: 6px; margin-top: 12px; }
+    .proof-text b { color: var(--text); }
+    .proof-text .hl { color: var(--gold2); font-weight: bold; }
+
+    /* ── Canvas containers ── */
+    .chart-wrap { position: relative; width: 100%; }
+
+    /* ── Bankroll stats ── */
+    .br-stat-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .br-stat {
+      flex: 1; min-width: 120px; background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 16px; border-top: 2px solid var(--gold-dim);
+    }
+    .br-stat .bsl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .br-stat .bsv { font-size: 1.4rem; font-weight: bold; color: var(--text); }
+    .br-stat .bsv.gold { color: var(--gold2); }
+    .br-stat .bsv.green { color: var(--green); }
+    .br-stat .bsv.red { color: var(--red); }
+
+    /* ── Legend ── */
+    .legend { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; font-size: 0.78rem; color: var(--muted2); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .legend-line { width: 20px; height: 2px; display: inline-block; margin-right: 6px; vertical-align: middle; }
+
+    /* ── Factor tabs ── */
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .tab {
+      background: transparent; color: var(--muted); border: 1px solid var(--border);
+      padding: 6px 14px; border-radius: 6px; cursor: pointer; font-family: var(--mono); font-size: 0.78rem;
+      letter-spacing: 0.5px; transition: all 0.15s;
+    }
+    .tab:hover { border-color: var(--border2); color: var(--muted2); }
+    .tab.active { background: var(--gold-dim); color: var(--gold2); border-color: var(--gold); }
+
+    /* ── Grid layouts ── */
+    .two-col { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media(min-width: 768px) { .two-col { grid-template-columns: 1fr 1fr; } }
+
+    .section { margin-bottom: 28px; }
+
+    /* ── Heatmap ── */
+    .heatmap-month { display: flex; flex-direction: column; gap: 4px; }
+    .heatmap-month-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .heatmap-row { display: flex; gap: 4px; flex-wrap: wrap; }
+    .hm-cell {
+      width: 18px; height: 18px; border-radius: 3px; cursor: crosshair;
+      background: var(--panel2); border: 1px solid var(--border); flex-shrink: 0;
+    }
+    .heatmap-outer { display: flex; flex-wrap: wrap; gap: 16px; }
+
+    /* ── Tooltip ── */
+    #tip {
+      position: fixed; background: rgba(9,9,12,0.97); border: 1px solid var(--gold);
+      padding: 12px 14px; border-radius: 6px; pointer-events: none; opacity: 0;
+      transition: opacity 0.08s; font-size: 0.78rem; z-index: 9999;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6); max-width: 260px; line-height: 1.8;
+    }
+    #tip b { color: var(--gold2); display: block; margin-bottom: 4px; }
+    #tip .tip-green { color: var(--green); }
+    #tip .tip-red   { color: var(--red);   }
+    #tip .tip-gold  { color: var(--gold2); }
+    #tip .tip-muted { color: var(--muted); }
+
+    /* ── Responsive spacing ── */
+    @media(max-width: 640px) {
+      #app { padding: 0 12px 40px; }
+      .site-header { padding: 32px 0 24px; }
+      .panel { padding: 16px; }
+    }
+  </style>
 </head>
 <body>
 
-    <div id="loader">Initializing System... Loading Backtest Data</div>
-    <div id="error"></div>
+<!-- Loading Screen -->
+<div id="loading-screen">
+  <div class="eyebrow" style="font-family:var(--mono);font-size:0.7rem;letter-spacing:4px;color:var(--muted);">INITIALIZING</div>
+  <h1>Fig Anomaly System</h1>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+  <div class="loading-sub">Loading backtest data...</div>
+</div>
 
-    <div class="container" id="app" style="display: none;">
-        
-        <!-- Header -->
-        <header class="header">
-            <h1>Fig Anomaly System</h1>
-            <p>Live Backtest & Strategy Proof</p>
-            <div class="pills" id="header-pills">
-                <!-- Injected via JS -->
-            </div>
-        </header>
+<!-- Error Screen -->
+<div id="error-screen">
+  <div class="err-icon">🚫</div>
+  <h2>Data Not Found</h2>
+  <p id="error-msg">Could not load <code>live_backtest.json</code>. Ensure the file exists at:<br>
+  <code>../fig-system/data/results/live_backtest.json</code><br>or next to this HTML file.</p>
+</div>
 
-        <!-- Strategy Selector -->
-        <section>
-            <h2 class="panel-title">Strategy Selection</h2>
-            <div class="strategy-grid" id="strategy-cards">
-                <!-- Cards Injected via JS -->
-            </div>
-        </section>
+<!-- Main App -->
+<div id="app">
 
-        <!-- Proof Section -->
-        <section class="panel">
-            <h2 class="panel-title">Statistical Proof</h2>
-            <div id="verdict-banner" class="verdict-banner">Evaluating Edge...</div>
-            
-            <div class="proof-grid">
-                <div>
-                    <div class="chart-container" style="height: 300px;">
-                        <canvas id="nullDistCanvas"></canvas>
-                    </div>
-                    <div style="margin-top: 15px; font-size: 0.9rem; color: var(--text-muted);" id="proof-text-1"></div>
-                </div>
-                <div>
-                    <div class="stat-group">
-                        <div class="stat-label">Show Rate vs Random</div>
-                        <div class="stat-value highlight" id="stat-show-rate">--</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);" id="proof-text-2"></div>
-                    </div>
-                    <div class="stat-group" style="margin-top: 20px;">
-                        <div class="stat-label">Bootstrap ROI (90% CI)</div>
-                        <div class="chart-container" style="height: 60px; margin-top: 10px;">
-                            <canvas id="bootstrapCanvas"></canvas>
-                        </div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center;" id="proof-text-ci"></div>
-                    </div>
-                    <div class="stat-group" style="margin-top: 20px; display: flex; justify-content: space-between;">
-                        <div>
-                            <div class="stat-label">P-Value</div>
-                            <div class="stat-value" id="stat-pval">--</div>
-                        </div>
-                        <div>
-                            <div class="stat-label">Z-Score</div>
-                            <div class="stat-value" id="stat-zscore">--</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="eyebrow">Live Strategy Analysis</div>
+    <h1>Fig Anomaly System<br><em style="-webkit-text-fill-color:var(--gold);font-style:italic;font-size:0.6em">Live Backtest</em></h1>
+    <div class="subtitle" id="header-sub">Loading results...</div>
+    <div class="pills" id="header-pills"></div>
+  </header>
 
-        <!-- Bankroll Simulation -->
-        <section class="panel">
-            <h2 class="panel-title">Bankroll Simulation</h2>
-            <div class="br-stats">
-                <div class="br-stat-box">
-                    <div class="stat-label">Final Bankroll</div>
-                    <div class="stat-value highlight" id="br-final">$0</div>
-                </div>
-                <div class="br-stat-box">
-                    <div class="stat-label">Total Deposited</div>
-                    <div class="stat-value" id="br-deposited">$0</div>
-                </div>
-                <div class="br-stat-box">
-                    <div class="stat-label">Net Profit</div>
-                    <div class="stat-value" id="br-profit">$0</div>
-                </div>
-                <div class="br-stat-box">
-                    <div class="stat-label">Max Drawdown</div>
-                    <div class="stat-value" style="color: var(--red);" id="br-dd">0%</div>
-                </div>
-            </div>
-            <div class="chart-container" style="height: 350px;">
-                <canvas id="bankrollCanvas"></canvas>
-            </div>
-        </section>
+  <!-- Strategy Cards -->
+  <div class="section">
+    <div class="section-title">Strategy Selection</div>
+    <div class="strategy-grid" id="strategy-grid"></div>
+  </div>
 
-        <div class="grid-2col">
-            <!-- Rolling Stats -->
-            <section class="panel">
-                <h2 class="panel-title">14-Day Rolling Momentum</h2>
-                <div class="chart-container" style="height: 150px; margin-bottom: 20px;">
-                    <canvas id="rollRoiCanvas"></canvas>
-                </div>
-                <div class="chart-container" style="height: 150px;">
-                    <canvas id="rollWinCanvas"></canvas>
-                </div>
-            </section>
+  <!-- Statistical Proof -->
+  <div class="section">
+    <div class="section-title">Statistical Proof of Edge</div>
+    <div class="panel">
+      <div class="proof-banner" id="proof-banner">—</div>
 
-            <!-- Daily Heatmap -->
-            <section class="panel">
-                <h2 class="panel-title">Daily P&L Heatmap</h2>
-                <div class="heatmap-container" id="heatmap">
-                    <!-- Cells injected via JS -->
-                </div>
-            </section>
+      <div class="proof-grid">
+        <!-- Left: null dist chart -->
+        <div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;letter-spacing:0.5px;">
+            NULL DISTRIBUTION vs OUR STRATEGY (500 Monte Carlo draws)
+          </div>
+          <div class="chart-wrap" style="height:280px;">
+            <canvas id="nullCanvas"></canvas>
+          </div>
+          <div class="proof-text" id="proof-text-main"></div>
         </div>
 
-        <!-- Factor Breakdown -->
-        <section class="panel">
-            <div class="panel-header" style="margin-bottom: 10px;">
-                <h2 class="panel-title" style="margin-bottom: 0; border: none;">Factor Breakdown</h2>
+        <!-- Right: sidebar stats -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+              Bootstrap CI (90%) — ROI
             </div>
-            <div class="tabs" id="factor-tabs">
-                <!-- Tabs injected via JS -->
+            <div class="chart-wrap" style="height:64px;">
+              <canvas id="bootstrapCanvas"></canvas>
             </div>
-            <div class="chart-container" style="height: 400px;">
-                <canvas id="factorCanvas"></canvas>
-            </div>
-        </section>
+            <div style="font-size:0.76rem;color:var(--muted);text-align:center;margin-top:6px;" id="ci-text"></div>
+          </div>
 
+          <div class="proof-stat-row">
+            <div class="pstat">
+              <div class="plabel">Z-Score</div>
+              <div class="pval gold" id="proof-z">—</div>
+            </div>
+            <div class="pstat">
+              <div class="plabel">P-Value</div>
+              <div class="pval" id="proof-p">—</div>
+            </div>
+          </div>
+
+          <div class="proof-stat-row">
+            <div class="pstat">
+              <div class="plabel">Our Show%</div>
+              <div class="pval green" id="proof-show-ours">—</div>
+            </div>
+            <div class="pstat">
+              <div class="plabel">Random Show%</div>
+              <div class="pval" id="proof-show-rand">—</div>
+            </div>
+          </div>
+
+          <div class="proof-text" id="proof-text-show"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bankroll Simulation -->
+  <div class="section">
+    <div class="section-title">Bankroll Simulation</div>
+    <div class="panel">
+      <div class="br-stat-row" id="br-stats-row"></div>
+      <div class="legend">
+        <span><span class="legend-line" style="background:var(--gold2);display:inline-block;"></span>Bankroll</span>
+        <span><span class="legend-line" style="background:var(--muted);display:inline-block;border-top:2px dashed var(--muted);height:0;"></span>Total Deposited</span>
+      </div>
+      <div class="chart-wrap" style="height:320px;"><canvas id="bankrollCanvas"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Rolling + Heatmap -->
+  <div class="two-col section">
+    <div class="panel">
+      <div class="section-title" style="font-size:1rem;">14-Day Rolling Momentum</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:10px;letter-spacing:0.5px;">ROI %</div>
+      <div class="chart-wrap" style="height:130px;"><canvas id="rollRoiCanvas"></canvas></div>
+      <div style="font-size:0.72rem;color:var(--muted);margin:14px 0 10px;letter-spacing:0.5px;">WIN RATE %</div>
+      <div class="chart-wrap" style="height:130px;"><canvas id="rollWinCanvas"></canvas></div>
     </div>
 
-    <div id="tooltip"></div>
-
-    <script>
-        // --- State ---
-        let appData = null;
-        let activeStrategyKey = 'wed_sat_claiming';
-        let activeFactorKey = 'odds';
-        
-        const COLORS = {
-            gold: '#d4af37', grayDash: '#5c6370', green: '#2ecc71', red: '#e74c3c', panel: '#16191d', text: '#e2e8f0', textMuted: '#8b949e'
-        };
-
-        const FACTOR_LABELS = {
-            odds: 'Odds', fig_level: 'Fig Level', fig_gap: 'Fig Gap', track: 'Track', dow: 'Day of Week', jockey: 'Jockey', bet_type: 'Bet Type', distance: 'Distance', field_size: 'Field Size'
-        };
-
-        const tooltip = document.getElementById('tooltip');
-
-        // --- Init ---
-        async function loadData() {
-            const paths = ['../fig-system/data/results/live_backtest.json', 'live_backtest.json'];
-            for (let path of paths) {
-                try {
-                    const res = await fetch(path);
-                    if (res.ok) {
-                        appData = await res.json();
-                        initApp();
-                        return;
-                    }
-                } catch (e) { /* ignore */ }
-            }
-            document.getElementById('loader').style.display = 'none';
-            const errEl = document.getElementById('error');
-            errEl.textContent = 'Failed to load live_backtest.json. Ensure the file is in the correct path.';
-            errEl.style.display = 'block';
-        }
-
-        function initApp() {
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('app').style.display = 'flex';
-            
-            // If default not found, pick first
-            if (!appData.strategies[activeStrategyKey]) {
-                activeStrategyKey = Object.keys(appData.strategies)[0];
-            }
-
-            renderHeader();
-            renderStrategyCards();
-            renderAll();
-        }
-
-        function formatPct(val) { return (val * 100).toFixed(1) + '%'; }
-        function formatMoney(val) { return val < 0 ? '-$' + Math.abs(val).toFixed(2) : '$' + val.toFixed(2); }
-        function formatNum(val) { return Number(val).toLocaleString(); }
-        
-        function getVerdictClass(verdict) {
-            if (!verdict) return 'verdict-none';
-            const v = verdict.toLowerCase();
-            if (v.includes('strong')) return 'verdict-strong';
-            if (v.includes('marginal')) return 'verdict-marginal';
-            return 'verdict-none';
-        }
-
-        // --- Render UI ---
-        function renderHeader() {
-            const h = document.getElementById('header-pills');
-            h.innerHTML = `
-                <div class="pill">Total Races: ${formatNum(appData.n_races)}</div>
-                <div class="pill">Date: ${appData.date_range.start} to ${appData.date_range.end}</div>
-                <div class="pill">${Object.keys(appData.strategies).length} Strategies Tested</div>
-            `;
-        }
-
-        function renderStrategyCards() {
-            const cont = document.getElementById('strategy-cards');
-            cont.innerHTML = '';
-            
-            Object.entries(appData.strategies).forEach(([key, strat]) => {
-                const isPos = strat.metrics.roi > 0;
-                const roiColor = isPos ? 'val-green' : 'val-red';
-                const vClass = getVerdictClass(strat.proof.verdict);
-                
-                const div = document.createElement('div');
-                div.className = `strategy-card ${key === activeStrategyKey ? 'active' : ''}`;
-                div.onclick = () => {
-                    activeStrategyKey = key;
-                    renderStrategyCards(); // update active state
-                    renderAll();
-                };
-
-                div.innerHTML = `
-                    <div class="card-header">
-                        <div class="card-title">${strat.label || key}</div>
-                        <div class="card-badge ${vClass}">${strat.proof.verdict || 'NO EDGE'}</div>
-                    </div>
-                    <div style="font-size: 1.4rem; font-weight: bold; margin-bottom: 10px;" class="${roiColor}">
-                        ${formatPct(strat.metrics.roi)} ROI
-                    </div>
-                    <div class="card-stats">
-                        <div>Bets: ${formatNum(strat.metrics.n)}</div>
-                        <div>Win: ${formatPct(strat.metrics.win_rate)}</div>
-                        <div>Sharpe: ${strat.metrics.sharpe ? strat.metrics.sharpe.toFixed(2) : '--'}</div>
-                        <div>Show: ${formatPct(strat.metrics.show_rate)}</div>
-                    </div>
-                `;
-                cont.appendChild(div);
-            });
-        }
-
-        function renderAll() {
-            renderProof();
-            renderBankroll();
-            renderRolling();
-            renderFactorTabs();
-            renderFactor();
-            renderHeatmap();
-        }
-
-        // --- Render Sections ---
-        function renderProof() {
-            const s = appData.strategies[activeStrategyKey];
-            const p = s.proof;
-            
-            const banner = document.getElementById('verdict-banner');
-            banner.textContent = p.verdict || 'VERDICT PENDING';
-            banner.className = 'verdict-banner ' + getVerdictClass(p.verdict);
-
-            document.getElementById('proof-text-1').innerHTML = `Random horse selection in these races produces <b>${formatPct(p.null_mean)}</b> avg ROI.<br>Our system: <b style="color:var(--gold)">${formatPct(p.our_roi)}</b>. Z=${p.z_score.toFixed(2)}, p=${p.p_value.toFixed(4)}`;
-            
-            document.getElementById('stat-show-rate').textContent = formatPct(p.show_rate_ours || 0);
-            document.getElementById('proof-text-2').innerHTML = `vs <b>${formatPct(p.show_rate_random || 0)}</b> random<br>(z=${(p.z_show||0).toFixed(2)}, p=${(p.p_show||0).toFixed(4)})`;
-            
-            document.getElementById('stat-pval').textContent = p.p_value.toFixed(4);
-            document.getElementById('stat-zscore').textContent = p.z_score.toFixed(2);
-
-            drawNullDistChart('nullDistCanvas', p);
-            
-            if (s.bootstrap_ci) {
-                document.getElementById('proof-text-ci').textContent = `90% CI: [${formatPct(s.bootstrap_ci.ci90_lo)}, ${formatPct(s.bootstrap_ci.ci90_hi)}] | Pos Prob: ${formatPct(s.bootstrap_ci.p_positive)}`;
-                drawBootstrapBar('bootstrapCanvas', s.bootstrap_ci, p.our_roi);
-            }
-        }
-
-        function renderBankroll() {
-            const s = appData.strategies[activeStrategyKey];
-            const b = s.bankroll_sim;
-            if(!b) return;
-
-            document.getElementById('br-final').textContent = formatMoney(b.final_bankroll);
-            document.getElementById('br-deposited').textContent = formatMoney(b.total_deposited);
-            
-            const pEl = document.getElementById('br-profit');
-            pEl.textContent = formatMoney(b.profit_vs_deposits);
-            pEl.style.color = b.profit_vs_deposits >= 0 ? 'var(--green)' : 'var(--red)';
-            
-            document.getElementById('br-dd').textContent = formatPct(b.max_drawdown);
-
-            drawBankrollChart('bankrollCanvas', b.history);
-        }
-
-        function renderRolling() {
-            const s = appData.strategies[activeStrategyKey];
-            drawRollingLine('rollRoiCanvas', s.rolling, 'roll_roi', 'Rolling 14-d ROI', COLORS.gold);
-            drawRollingLine('rollWinCanvas', s.rolling, 'roll_win', 'Rolling 14-d Win %', COLORS.text);
-        }
-
-        function renderFactorTabs() {
-            const s = appData.strategies[activeStrategyKey];
-            const tabsContainer = document.getElementById('factor-tabs');
-            tabsContainer.innerHTML = '';
-            
-            if(!s.factors) return;
-            
-            const availFactors = Object.keys(s.factors);
-            if (!availFactors.includes(activeFactorKey)) activeFactorKey = availFactors[0];
-
-            availFactors.forEach(fk => {
-                const btn = document.createElement('button');
-                btn.className = `tab-btn ${fk === activeFactorKey ? 'active' : ''}`;
-                btn.textContent = FACTOR_LABELS[fk] || fk;
-                btn.onclick = () => {
-                    activeFactorKey = fk;
-                    renderFactorTabs();
-                    renderFactor();
-                };
-                tabsContainer.appendChild(btn);
-            });
-        }
-
-        function renderFactor() {
-            const s = appData.strategies[activeStrategyKey];
-            if(!s.factors || !s.factors[activeFactorKey]) return;
-            drawFactorChart('factorCanvas', s.factors[activeFactorKey]);
-        }
-
-        function renderHeatmap() {
-            const s = appData.strategies[activeStrategyKey];
-            const cont = document.getElementById('heatmap');
-            cont.innerHTML = '';
-            if(!s.bankroll_sim || !s.bankroll_sim.history) return;
-
-            s.bankroll_sim.history.forEach(day => {
-                const pl = day.day_profit || 0;
-                const cell = document.createElement('div');
-                cell.className = 'heat-cell';
-                
-                let color;
-                if (pl === 0 && day.n_bets === 0) {
-                    color = COLORS.panel; // no bets
-                } else if (pl >= 0) {
-                    const intensity = Math.min(1, 0.2 + (pl / 500)); // cap
-                    color = `rgba(46, 204, 113, ${intensity})`;
-                } else {
-                    const intensity = Math.min(1, 0.2 + (Math.abs(pl) / 500));
-                    color = `rgba(231, 76, 60, ${intensity})`;
-                }
-                
-                cell.style.backgroundColor = color;
-                
-                cell.onmouseenter = (e) => showTooltip(e, `<b>${day.date}</b><br>Bets: ${day.n_bets}<br>P&L: ${formatMoney(pl)}`);
-                cell.onmouseleave = hideTooltip;
-                cell.onmousemove = moveTooltip;
-                
-                cont.appendChild(cell);
-            });
-        }
-
-        // --- Canvas Drawing Utils ---
-        function setupCanvas(id) {
-            const canvas = document.getElementById(id);
-            const ctx = canvas.getContext('2d');
-            const rect = canvas.parentElement.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.scale(dpr, dpr);
-            return { ctx, w: rect.width, h: rect.height, canvas };
-        }
-
-        function drawNullDistChart(id, proof) {
-            const { ctx, w, h } = setupCanvas(id);
-            if(!proof.null_distribution || proof.null_distribution.length === 0) return;
-            
-            const dist = proof.null_distribution;
-            const minX = Math.min(...dist, proof.our_roi) - 0.05;
-            const maxX = Math.max(...dist, proof.our_roi) + 0.05;
-            
-            // Bucket into 40 bins
-            const bins = 40;
-            const bucketSize = (maxX - minX) / bins;
-            const counts = new Array(bins).fill(0);
-            
-            dist.forEach(v => {
-                let idx = Math.floor((v - minX) / bucketSize);
-                if (idx >= bins) idx = bins - 1;
-                counts[idx]++;
-            });
-
-            const maxC = Math.max(...counts);
-            const padY = 20, padX = 20;
-            const plotW = w - padX * 2;
-            const plotH = h - padY * 2;
-
-            function getX(val) { return padX + ((val - minX) / (maxX - minX)) * plotW; }
-            function getY(val) { return h - padY - (val / maxC) * plotH; }
-
-            // Draw bars
-            ctx.fillStyle = '#2c2f33';
-            for(let i=0; i<bins; i++) {
-                const bx = getX(minX + i*bucketSize);
-                const bw = plotW / bins - 1;
-                const bh = (counts[i] / maxC) * plotH;
-                const by = h - padY - bh;
-                ctx.fillRect(bx, by, bw, bh);
-            }
-
-            // Draw baseline (0)
-            if (minX < 0 && maxX > 0) {
-                ctx.beginPath(); ctx.strokeStyle = COLORS.textMuted; ctx.setLineDash([2,2]);
-                const zx = getX(0);
-                ctx.moveTo(zx, padY); ctx.lineTo(zx, h - padY); ctx.stroke(); ctx.setLineDash([]);
-            }
-
-            // Draw 95th / 99th
-            if (proof.null_p95) {
-                ctx.beginPath(); ctx.strokeStyle = COLORS.yellow; ctx.setLineDash([4,2]);
-                const p95x = getX(proof.null_p95);
-                ctx.moveTo(p95x, padY); ctx.lineTo(p95x, h - padY); ctx.stroke();
-            }
-            if (proof.null_p99) {
-                ctx.beginPath(); ctx.strokeStyle = COLORS.red;
-                const p99x = getX(proof.null_p99);
-                ctx.moveTo(p99x, padY); ctx.lineTo(p99x, h - padY); ctx.stroke();
-            }
-
-            // Draw Our ROI
-            ctx.beginPath(); ctx.strokeStyle = COLORS.gold; ctx.lineWidth = 3; ctx.setLineDash([]);
-            const ourX = getX(proof.our_roi);
-            ctx.moveTo(ourX, 10); ctx.lineTo(ourX, h - padY); ctx.stroke();
-            
-            // Text
-            ctx.fillStyle = COLORS.gold; ctx.font = 'bold 12px Space Mono'; ctx.textAlign = 'center';
-            ctx.fillText('OUR ROI', ourX, 10);
-            
-            // Axes
-            ctx.fillStyle = COLORS.textMuted; ctx.font = '10px Space Mono';
-            ctx.textAlign = 'left'; ctx.fillText(formatPct(minX), padX, h - 5);
-            ctx.textAlign = 'right'; ctx.fillText(formatPct(maxX), w - padX, h - 5);
-        }
-
-        function drawBootstrapBar(id, ci, our_roi) {
-            const { ctx, w, h } = setupCanvas(id);
-            const cy = h / 2;
-            
-            // Assume min -50%, max +100% bounds for drawing visually, or dynamic based on CI
-            const minX = Math.min(-0.2, ci.ci90_lo - 0.1);
-            const maxX = Math.max(0.4, ci.ci90_hi + 0.1, our_roi + 0.1);
-            
-            function getX(val) { return 10 + ((val - minX) / (maxX - minX)) * (w - 20); }
-
-            // Base line
-            ctx.beginPath(); ctx.strokeStyle = COLORS.panel; ctx.lineWidth = 4;
-            ctx.moveTo(getX(minX), cy); ctx.lineTo(getX(maxX), cy); ctx.stroke();
-
-            // Zero line
-            const zx = getX(0);
-            ctx.beginPath(); ctx.strokeStyle = COLORS.textMuted; ctx.lineWidth = 2;
-            ctx.moveTo(zx, cy - 10); ctx.lineTo(zx, cy + 10); ctx.stroke();
-
-            // CI Range
-            const x1 = getX(ci.ci90_lo), x2 = getX(ci.ci90_hi);
-            ctx.fillStyle = 'rgba(212, 175, 55, 0.3)';
-            ctx.fillRect(x1, cy - 8, x2 - x1, 16);
-            
-            // Our ROI
-            const ox = getX(our_roi);
-            ctx.beginPath(); ctx.fillStyle = COLORS.gold; ctx.arc(ox, cy, 6, 0, Math.PI*2); ctx.fill();
-            
-            // Labels
-            ctx.fillStyle = COLORS.textMuted; ctx.font = '10px Space Mono'; ctx.textAlign = 'center';
-            ctx.fillText(formatPct(ci.ci90_lo), x1, cy + 22);
-            ctx.fillText(formatPct(ci.ci90_hi), x2, cy + 22);
-            ctx.fillStyle = COLORS.text; ctx.fillText('0%', zx, cy - 15);
-        }
-
-        function drawBankrollChart(id, history) {
-            const { ctx, w, h, canvas } = setupCanvas(id);
-            if (!history || history.length === 0) return;
-
-            const padY = 20, padX = 40;
-            const plotW = w - padX - 10;
-            const plotH = h - padY * 2;
-
-            const maxBr = Math.max(...history.map(d => Math.max(d.bankroll, d.deposited)));
-            const minBr = Math.min(0, ...history.map(d => Math.min(d.bankroll, d.deposited)));
-
-            function getX(i) { return padX + (i / (history.length - 1)) * plotW; }
-            function getY(val) { return h - padY - ((val - minBr) / (maxBr - minBr)) * plotH; }
-
-            // Zero line
-            if(minBr < 0) {
-                ctx.beginPath(); ctx.strokeStyle = '#333'; ctx.moveTo(padX, getY(0)); ctx.lineTo(w-10, getY(0)); ctx.stroke();
-            }
-
-            // Deposited Line
-            ctx.beginPath(); ctx.strokeStyle = COLORS.grayDash; ctx.lineWidth = 2; ctx.setLineDash([4,4]);
-            history.forEach((d, i) => {
-                if(i===0) ctx.moveTo(getX(i), getY(d.deposited));
-                else ctx.lineTo(getX(i), getY(d.deposited));
-            });
-            ctx.stroke(); ctx.setLineDash([]);
-
-            // Bankroll Line
-            ctx.beginPath(); ctx.strokeStyle = COLORS.gold; ctx.lineWidth = 2;
-            history.forEach((d, i) => {
-                if(i===0) ctx.moveTo(getX(i), getY(d.bankroll));
-                else ctx.lineTo(getX(i), getY(d.bankroll));
-            });
-            ctx.stroke();
-            
-            // Fill under bankroll
-            ctx.lineTo(getX(history.length-1), getY(minBr));
-            ctx.lineTo(getX(0), getY(minBr));
-            ctx.fillStyle = 'rgba(212, 175, 55, 0.05)';
-            ctx.fill();
-
-            // Y Axis labels
-            ctx.fillStyle = COLORS.textMuted; ctx.font = '10px Space Mono'; ctx.textAlign = 'right';
-            ctx.fillText(formatMoney(maxBr), padX - 5, padY + 5);
-            ctx.fillText(formatMoney(minBr), padX - 5, h - padY);
-
-            // Hover interactions
-            canvas.onmousemove = (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const dpr = window.devicePixelRatio || 1;
-                const mx = (e.clientX - rect.left);
-                // Map to index
-                let i = Math.round(((mx - padX) / plotW) * (history.length - 1));
-                if (i < 0) i = 0; if (i >= history.length) i = history.length - 1;
-                
-                const d = history[i];
-                let tt = `<b>${d.date}</b><br>`;
-                tt += `<span style="color:var(--gold)">Bankroll: ${formatMoney(d.bankroll)}</span><br>`;
-                tt += `<span style="color:var(--text-muted)">Deposited: ${formatMoney(d.deposited)}</span><br>`;
-                tt += `Daily P&L: ${formatMoney(d.day_profit)}<br>`;
-                tt += `Bets: ${d.n_bets}`;
-                
-                showTooltip(e, tt);
-                
-                // Draw cursor line
-                renderBankroll(); // redraw clean
-                const drawCtx = canvas.getContext('2d');
-                drawCtx.beginPath(); drawCtx.strokeStyle = 'rgba(255,255,255,0.2)';
-                const x = getX(i);
-                drawCtx.moveTo(x, padY); drawCtx.lineTo(x, h-padY); drawCtx.stroke();
-                drawCtx.beginPath(); drawCtx.fillStyle = COLORS.gold;
-                drawCtx.arc(x, getY(d.bankroll), 4, 0, Math.PI*2); drawCtx.fill();
-            };
-            canvas.onmouseleave = () => { hideTooltip(); renderBankroll(); };
-        }
-
-        function drawRollingLine(id, data, key, title, color) {
-            const { ctx, w, h } = setupCanvas(id);
-            if (!data || data.length === 0) return;
-            
-            const padY = 20, padX = 30;
-            const plotW = w - padX - 10;
-            const plotH = h - padY - 15;
-
-            const vals = data.map(d => d[key]);
-            const max = Math.max(...vals);
-            const min = Math.min(...vals, 0);
-
-            function getX(i) { return padX + (i / (data.length - 1)) * plotW; }
-            function getY(val) { return h - padY - ((val - min) / (max - min)) * plotH; }
-
-            // Zero line
-            if (min < 0 && max > 0) {
-                ctx.beginPath(); ctx.strokeStyle = '#333'; ctx.moveTo(padX, getY(0)); ctx.lineTo(w-10, getY(0)); ctx.stroke();
-            }
-
-            // Line
-            ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
-            data.forEach((d, i) => {
-                if(i===0) ctx.moveTo(getX(i), getY(d[key]));
-                else ctx.lineTo(getX(i), getY(d[key]));
-            });
-            ctx.stroke();
-
-            // Title
-            ctx.fillStyle = COLORS.textMuted; ctx.font = '10px Space Mono'; ctx.textAlign = 'left';
-            ctx.fillText(title, padX, 12);
-            
-            // Labels
-            ctx.textAlign = 'right';
-            ctx.fillText(formatPct(max), padX - 5, 25);
-            ctx.fillText(formatPct(min), padX - 5, h - padY);
-        }
-
-        function drawFactorChart(id, factorData) {
-            const { ctx, w, h, canvas } = setupCanvas(id);
-            const buckets = Object.keys(factorData);
-            if(buckets.length === 0) return;
-
-            // Sort buckets if possible (numeric if applicable)
-            buckets.sort((a,b) => {
-                const numA = parseFloat(a.split('-')[0]) || a;
-                const numB = parseFloat(b.split('-')[0]) || b;
-                if(typeof numA === 'number' && typeof numB === 'number') return numA - numB;
-                return String(a).localeCompare(String(b));
-            });
-
-            const padL = 100, padR = 100, padT = 20, padB = 20;
-            const plotW = w - padL - padR;
-            const barH = (h - padT - padB) / buckets.length * 0.8;
-            const spacing = (h - padT - padB) / buckets.length;
-
-            const rois = buckets.map(b => factorData[b].roi);
-            const maxAbsRoi = Math.max(0.1, ...rois.map(Math.abs));
-
-            function getX(val) { return padL + (plotW / 2) + (val / maxAbsRoi) * (plotW / 2); }
-            const zeroX = getX(0);
-
-            // Zero line
-            ctx.beginPath(); ctx.strokeStyle = COLORS.textMuted; ctx.moveTo(zeroX, padT); ctx.lineTo(zeroX, h-padB); ctx.stroke();
-
-            const hitZones = [];
-
-            buckets.forEach((b, i) => {
-                const d = factorData[b];
-                const y = padT + i * spacing;
-                const valX = getX(d.roi);
-                
-                // Bar
-                ctx.fillStyle = d.roi >= 0 ? COLORS.green : COLORS.red;
-                const bx = Math.min(zeroX, valX);
-                const bw = Math.abs(valX - zeroX);
-                ctx.fillRect(bx, y, bw, barH);
-
-                // Label L
-                ctx.fillStyle = COLORS.text; ctx.font = '11px Space Mono'; ctx.textAlign = 'right';
-                // truncate label if needed
-                let label = b.length > 12 ? b.substring(0,10)+'..' : b;
-                ctx.fillText(label, padL - 10, y + barH/2 + 4);
-
-                // Stats R
-                ctx.textAlign = 'left'; ctx.fillStyle = COLORS.textMuted;
-                ctx.fillText(`N=${d.n} W=${formatPct(d.win_rate)}`, w - padR + 10, y + barH/2 + 4);
-                
-                hitZones.push({ y: y, h: barH, data: d, label: b });
-            });
-
-            // Hover
-            canvas.onmousemove = (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const my = (e.clientY - rect.top);
-                const hit = hitZones.find(z => my >= z.y && my <= z.y + z.h);
-                if(hit) {
-                    const d = hit.data;
-                    let tt = `<b>${hit.label}</b><br>`;
-                    tt += `Bets: ${d.n}<br>`;
-                    tt += `ROI: <span style="color:${d.roi>=0?COLORS.green:COLORS.red}">${formatPct(d.roi)}</span><br>`;
-                    tt += `Win: ${formatPct(d.win_rate)} | Show: ${formatPct(d.show_rate)}<br>`;
-                    tt += `Net P&L: ${formatMoney(d.net_pl || 0)}`;
-                    showTooltip(e, tt);
-                } else { hideTooltip(); }
-            };
-            canvas.onmouseleave = hideTooltip;
-        }
-
-        // --- Utils ---
-        function showTooltip(e, html) {
-            tooltip.innerHTML = html;
-            tooltip.style.opacity = 1;
-            moveTooltip(e);
-        }
-        function moveTooltip(e) {
-            tooltip.style.left = (e.pageX + 15) + 'px';
-            tooltip.style.top = (e.pageY + 15) + 'px';
-        }
-        function hideTooltip() { tooltip.style.opacity = 0; }
-
-        // Start
-        window.onload = loadData;
-
-    </script>
+    <div class="panel">
+      <div class="section-title" style="font-size:1rem;">Daily P&amp;L Heatmap</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:14px;">
+        <span style="display:inline-block;width:12px;height:12px;background:var(--green);border-radius:2px;vertical-align:middle;"></span>
+        Profit &nbsp;
+        <span style="display:inline-block;width:12px;height:12px;background:var(--red);border-radius:2px;vertical-align:middle;"></span>
+        Loss &nbsp;
+        <span style="display:inline-block;width:12px;height:12px;background:var(--panel2);border:1px solid var(--border);border-radius:2px;vertical-align:middle;"></span>
+        No bets
+      </div>
+      <div class="heatmap-outer" id="heatmap-outer"></div>
+    </div>
+  </div>
+
+  <!-- Factor Breakdown -->
+  <div class="section">
+    <div class="section-title">Factor Breakdown</div>
+    <div class="panel">
+      <div class="tabs" id="factor-tabs"></div>
+      <div class="chart-wrap" style="height:420px;"><canvas id="factorCanvas"></canvas></div>
+    </div>
+  </div>
+
+</div><!-- end #app -->
+
+<div id="tip"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  State
+// ════════════════════════════════════════════════════════════
+let DATA = null;
+let activeKey = 'wed_sat_claiming';
+let activeFactorKey = 'odds';
+
+const C = {
+  gold:    '#c9a227', gold2: '#e8bc3a',
+  green:   '#27c98f', red:   '#e0524a',
+  amber:   '#e89b2a', blue:  '#4a8fe8',
+  gray:    '#6b7585', gray2: '#8b97ab',
+  panel:   '#13161b', panel2:'#1a1d24', bg: '#09090c',
+  border:  '#252830', border2:'#2e3240',
+  text:    '#dde3ed',
+};
+
+const FACTOR_NAMES = {
+  odds:'Odds', fig_level:'Fig Level', fig_gap:'Fig Gap', track:'Track',
+  dow:'Day of Week', jockey:'Jockey', bet_type:'Bet Type', distance:'Distance', field_size:'Field Size'
+};
+
+// ════════════════════════════════════════════════════════════
+//  Tooltip
+// ════════════════════════════════════════════════════════════
+const TIP = document.getElementById('tip');
+function tip(e, html) {
+  TIP.innerHTML = html; TIP.style.opacity = '1';
+  moveTip(e);
+}
+function moveTip(e) {
+  const x = e.clientX + 16, y = e.clientY + 16;
+  const tw = TIP.offsetWidth, th = TIP.offsetHeight;
+  TIP.style.left = (x + tw > window.innerWidth ? x - tw - 28 : x) + 'px';
+  TIP.style.top  = (y + th > window.innerHeight ? y - th - 28 : y) + 'px';
+}
+function hideTip() { TIP.style.opacity = '0'; }
+
+// ════════════════════════════════════════════════════════════
+//  Format helpers
+// ════════════════════════════════════════════════════════════
+function pct(v, d=1) { return (v * 100).toFixed(d) + '%'; }
+function money(v)    { return (v < 0 ? '-$' : '$') + Math.abs(v).toFixed(2); }
+function round2(v)   { return (Math.round(v * 100) / 100).toFixed(2); }
+function comma(v)    { return Number(v).toLocaleString(); }
+function sigClass(p) {
+  return p <= 0.01 ? 'strong' : p <= 0.05 ? 'marginal' : 'none';
+}
+function verdictClass(verdict) {
+  if (!verdict) return 'none';
+  const v = verdict.toLowerCase();
+  if (v.includes('strong') || v.includes('significant')) return 'strong';
+  if (v.includes('marginal') || v.includes('weak')) return 'marginal';
+  return 'none';
+}
+
+// ════════════════════════════════════════════════════════════
+//  Canvas setup (DPR-aware)
+// ════════════════════════════════════════════════════════════
+function initCanvas(id) {
+  const el  = document.getElementById(id);
+  const par = el.parentElement;
+  const dpr = window.devicePixelRatio || 1;
+  const W = par.clientWidth, H = par.clientHeight;
+  el.width  = W * dpr;
+  el.height = H * dpr;
+  el.style.width  = W + 'px';
+  el.style.height = H + 'px';
+  const ctx = el.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, W, H, el, dpr };
+}
+
+// Grid lines helper
+function drawGrid(ctx, x0, y0, x1, y1, nH = 5, nV = 0) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= nH; i++) {
+    const y = y0 + ((y1 - y0) / nH) * i;
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+  }
+  if (nV) {
+    for (let i = 0; i <= nV; i++) {
+      const x = x0 + ((x1 - x0) / nV) * i;
+      ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// ════════════════════════════════════════════════════════════
+//  Load data
+// ════════════════════════════════════════════════════════════
+async function load() {
+  const paths = [
+    '../fig-system/data/results/live_backtest.json',
+    'live_backtest.json'
+  ];
+  for (const p of paths) {
+    try {
+      const r = await fetch(p);
+      if (r.ok) { DATA = await r.json(); boot(); return; }
+    } catch (_) {}
+  }
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('error-screen').style.display = 'flex';
+}
+
+// ════════════════════════════════════════════════════════════
+//  Boot
+// ════════════════════════════════════════════════════════════
+function boot() {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  if (!DATA.strategies[activeKey]) {
+    activeKey = Object.keys(DATA.strategies)[0];
+  }
+
+  renderHeader();
+  renderCards();
+  renderAll();
+}
+
+// ════════════════════════════════════════════════════════════
+//  Header
+// ════════════════════════════════════════════════════════════
+function renderHeader() {
+  const dr = DATA.date_range;
+  document.getElementById('header-sub').textContent =
+    `${dr.start} — ${dr.end}  ·  Generated ${DATA.generated_at ? DATA.generated_at.slice(0,10) : 'recently'}`;
+
+  const keys = Object.keys(DATA.strategies);
+  document.getElementById('header-pills').innerHTML =
+    `<div class="pill"><strong>${comma(DATA.n_races)}</strong> races</div>` +
+    `<div class="pill">From <strong>${dr.start}</strong> to <strong>${dr.end}</strong></div>` +
+    `<div class="pill"><strong>${keys.length}</strong> strategies tested</div>`;
+}
+
+// ════════════════════════════════════════════════════════════
+//  Strategy Cards
+// ════════════════════════════════════════════════════════════
+function renderCards() {
+  const grid = document.getElementById('strategy-grid');
+  grid.innerHTML = '';
+  Object.entries(DATA.strategies).forEach(([k, s]) => {
+    const m = s.metrics, pr = s.proof;
+    const roiPos = m.roi >= 0;
+    const vClass = verdictClass(pr.verdict);
+    const badgeClass = { strong:'badge-strong', marginal:'badge-marginal', none:'badge-none' }[vClass];
+
+    const el = document.createElement('div');
+    el.className = 'strat-card' + (k === activeKey ? ' active' : '');
+    el.innerHTML = `
+      <div class="card-top">
+        <div>
+          <div class="card-name">${s.label || k}</div>
+          ${s.desc ? `<div class="card-desc">${s.desc}</div>` : ''}
+        </div>
+        <div class="badge ${badgeClass}">${pr.verdict || 'NO EDGE'}</div>
+      </div>
+      <div class="card-roi ${roiPos ? 'pos' : 'neg'}">${pct(m.roi)}</div>
+      <div class="card-meta">
+        <div class="meta-item"><span class="mk">Bets</span> <span class="mv">${comma(m.n)}</span></div>
+        <div class="meta-item"><span class="mk">Win%</span> <span class="mv">${pct(m.win_rate)}</span></div>
+        <div class="meta-item"><span class="mk">Show%</span> <span class="mv">${pct(m.show_rate)}</span></div>
+        <div class="meta-item"><span class="mk">Sharpe</span> <span class="mv">${m.sharpe != null ? round2(m.sharpe) : '—'}</span></div>
+        <div class="meta-item"><span class="mk">P-val</span> <span class="mv">${pr.p_value != null ? pr.p_value.toFixed(4) : '—'}</span></div>
+        <div class="meta-item"><span class="mk">Days</span> <span class="mv">${m.n_days || '—'}</span></div>
+      </div>`;
+    el.onclick = () => { activeKey = k; renderCards(); renderAll(); };
+    grid.appendChild(el);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  renderAll — called on strategy switch
+// ════════════════════════════════════════════════════════════
+function renderAll() {
+  renderProof();
+  renderBankroll();
+  renderRolling();
+  renderFactorTabs();
+  renderFactor();
+  renderHeatmap();
+}
+
+// ════════════════════════════════════════════════════════════
+//  Proof Section
+// ════════════════════════════════════════════════════════════
+function renderProof() {
+  const s = DATA.strategies[activeKey];
+  const p = s.proof;
+  const vClass = verdictClass(p.verdict);
+
+  const banner = document.getElementById('proof-banner');
+  banner.textContent = p.verdict || 'AWAITING EVALUATION';
+  banner.className = 'proof-banner ' + vClass;
+
+  document.getElementById('proof-z').textContent = p.z_score != null ? round2(p.z_score) : '—';
+  const pEl = document.getElementById('proof-p');
+  pEl.textContent = p.p_value != null ? p.p_value.toFixed(4) : '—';
+  pEl.style.color = p.p_value < 0.01 ? C.green : p.p_value < 0.05 ? C.amber : C.red;
+
+  document.getElementById('proof-show-ours').textContent = p.show_rate_ours != null ? pct(p.show_rate_ours) : '—';
+  document.getElementById('proof-show-rand').textContent = p.show_rate_random != null ? pct(p.show_rate_random) : '—';
+
+  document.getElementById('proof-text-main').innerHTML =
+    `Random horse selection in these exact races produces <b>${pct(p.null_mean || 0)}</b> avg ROI ` +
+    `(p50 = ${pct(p.null_p50 || 0)}, p95 = ${pct(p.null_p95 || 0)}, p99 = ${pct(p.null_p99 || 0)}).<br>` +
+    `Our system: <span class="hl">${pct(p.our_roi || 0)}</span> — ` +
+    `Z = <b>${round2(p.z_score || 0)}</b>, p = <b>${p.p_value != null ? p.p_value.toFixed(4) : '—'}</b>.` +
+    (p.significant_99 ? ' <span class="hl">✓ Significant at 99%</span>' :
+     p.significant_95 ? ' <span style="color:var(--amber)">✓ Significant at 95%</span>' :
+     ' <span style="color:var(--red)">✗ Not significant</span>');
+
+  document.getElementById('proof-text-show').innerHTML =
+    `Show rate: our horses show <b>${pct(p.show_rate_ours || 0)}</b> vs <b>${pct(p.show_rate_random || 0)}</b> random ` +
+    `(z = ${round2(p.z_show || 0)}, p = ${p.p_show != null ? p.p_show.toFixed(4) : '—'}).<br>` +
+    `Avg field size: ${round2(p.avg_field_size || 0)} horses — qualifying races: ${comma(p.n_qualifying || 0)}.`;
+
+  drawNullDist(p);
+
+  if (s.bootstrap_ci) {
+    drawBootstrap(s.bootstrap_ci, p.our_roi || 0);
+    const ci = s.bootstrap_ci;
+    document.getElementById('ci-text').textContent =
+      `90% CI: [${pct(ci.ci90_lo)}, ${pct(ci.ci90_hi)}]  ·  P(positive) = ${pct(ci.p_positive)}`;
+  }
+}
+
+// ── Null Distribution Histogram ──
+function drawNullDist(p) {
+  const { ctx, W, H } = initCanvas('nullCanvas');
+  const dist = p.null_distribution || [];
+  if (!dist.length) return;
+
+  const pL = 10, pR = 10, pT = 28, pB = 24;
+  const plotW = W - pL - pR, plotH = H - pT - pB;
+
+  const ourRoi = p.our_roi || 0;
+  const rawMin = Math.min(...dist);
+  const rawMax = Math.max(...dist);
+  const span   = rawMax - rawMin;
+  const minX   = rawMin - span * 0.05;
+  const maxX   = Math.max(rawMax, ourRoi) + span * 0.05;
+  const rangeX = maxX - minX;
+
+  // Build histogram
+  const BINS = 50;
+  const bW = rangeX / BINS;
+  const counts = new Array(BINS).fill(0);
+  dist.forEach(v => {
+    let i = Math.floor((v - minX) / bW);
+    if (i < 0) i = 0; if (i >= BINS) i = BINS - 1;
+    counts[i]++;
+  });
+  const maxC = Math.max(...counts);
+
+  function xp(v) { return pL + ((v - minX) / rangeX) * plotW; }
+  function yp(c) { return pT + plotH - (c / maxC) * plotH; }
+
+  // Grid
+  drawGrid(ctx, pL, pT, pL + plotW, pT + plotH, 4);
+
+  // Find which bins are below our ROI vs above
+  for (let i = 0; i < BINS; i++) {
+    if (!counts[i]) continue;
+    const bx = xp(minX + i * bW);
+    const bNextX = xp(minX + (i + 1) * bW);
+    const bTop = yp(counts[i]);
+    const bBot = pT + plotH;
+    const binMid = minX + (i + 0.5) * bW;
+
+    const col = binMid >= ourRoi ? C.gold : 'rgba(120,120,140,0.4)';
+    ctx.fillStyle = col;
+    ctx.fillRect(bx + 1, bTop, bNextX - bx - 2, bBot - bTop);
+  }
+
+  // Percentile lines
+  const lines = [
+    { val: p.null_p95, color: C.amber, label: 'p95' },
+    { val: p.null_p99, color: C.red,   label: 'p99' },
+  ];
+  lines.forEach(({ val, color, label }) => {
+    if (val == null) return;
+    const x = xp(val);
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(x, pT); ctx.lineTo(x, pT + plotH); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = color; ctx.font = 'bold 10px Space Mono'; ctx.textAlign = 'center';
+    ctx.fillText(label, x, pT - 4);
+    ctx.restore();
+  });
+
+  // Our ROI line — gold, thick, glow
+  const ourX = xp(ourRoi);
+  ctx.save();
+  ctx.shadowColor = C.gold2; ctx.shadowBlur = 10;
+  ctx.strokeStyle = C.gold2; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(ourX, pT - 4); ctx.lineTo(ourX, pT + plotH); ctx.stroke();
+  ctx.restore();
+
+  // Our ROI label
+  ctx.fillStyle = C.gold2; ctx.font = 'bold 10px Space Mono'; ctx.textAlign = 'center';
+  ctx.fillText('▼ OUR ROI', ourX, pT - 8);
+
+  // X-axis ticks
+  ctx.fillStyle = C.gray; ctx.font = '9px Space Mono'; ctx.textAlign = 'center';
+  const ticks = 5;
+  for (let i = 0; i <= ticks; i++) {
+    const v = minX + (rangeX / ticks) * i;
+    ctx.fillText(pct(v, 0), xp(v), pT + plotH + 14);
+  }
+}
+
+// ── Bootstrap CI bar ──
+function drawBootstrap(ci, ourRoi) {
+  const { ctx, W, H } = initCanvas('bootstrapCanvas');
+  const pL = 14, pR = 14, cy = H / 2;
+
+  const lo = Math.min(ci.ci90_lo, -0.1, ourRoi - 0.05);
+  const hi = Math.max(ci.ci90_hi, 0.2, ourRoi + 0.05);
+  const range = hi - lo;
+
+  function xp(v) { return pL + ((v - lo) / range) * (W - pL - pR); }
+
+  // Track background
+  ctx.fillStyle = C.panel2;
+  ctx.beginPath(); ctx.roundRect(pL, cy - 5, W - pL - pR, 10, 5); ctx.fill();
+
+  // CI fill
+  const x1 = xp(ci.ci90_lo), x2 = xp(ci.ci90_hi);
+  ctx.fillStyle = 'rgba(201,162,39,0.28)';
+  ctx.fillRect(x1, cy - 8, x2 - x1, 16);
+
+  // CI edges
+  ctx.strokeStyle = C.gold; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x1, cy - 8); ctx.lineTo(x1, cy + 8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x2, cy - 8); ctx.lineTo(x2, cy + 8); ctx.stroke();
+
+  // Zero
+  const zx = xp(0);
+  ctx.strokeStyle = C.gray; ctx.lineWidth = 1; ctx.setLineDash([2, 2]);
+  ctx.beginPath(); ctx.moveTo(zx, cy - 12); ctx.lineTo(zx, cy + 12); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Our ROI dot
+  const ox = xp(ourRoi);
+  ctx.save(); ctx.shadowColor = C.gold2; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.arc(ox, cy, 6, 0, Math.PI * 2);
+  ctx.fillStyle = C.gold2; ctx.fill(); ctx.restore();
+
+  // Labels
+  ctx.font = '9px Space Mono'; ctx.textAlign = 'center'; ctx.fillStyle = C.gray2;
+  ctx.fillText(pct(ci.ci90_lo), x1, cy + 22);
+  ctx.fillText(pct(ci.ci90_hi), x2, cy + 22);
+  ctx.fillStyle = C.text; ctx.fillText('0%', zx, cy - 16);
+}
+
+// ════════════════════════════════════════════════════════════
+//  Bankroll Chart
+// ════════════════════════════════════════════════════════════
+function renderBankroll() {
+  const s = DATA.strategies[activeKey];
+  const b = s.bankroll_sim;
+  const row = document.getElementById('br-stats-row');
+  if (!b) { row.innerHTML = '<div style="color:var(--muted)">No bankroll simulation data.</div>'; return; }
+
+  const profit = b.profit_vs_deposits;
+  row.innerHTML = `
+    <div class="br-stat"><div class="bsl">Final Bankroll</div><div class="bsv gold">${money(b.final_bankroll)}</div></div>
+    <div class="br-stat"><div class="bsl">Total Deposited</div><div class="bsv">${money(b.total_deposited)}</div></div>
+    <div class="br-stat"><div class="bsl">Net Profit</div><div class="bsv ${profit >= 0 ? 'green' : 'red'}">${money(profit)}</div></div>
+    <div class="br-stat"><div class="bsl">Max Drawdown</div><div class="bsv red">${pct(b.max_drawdown)}</div></div>
+    <div class="br-stat"><div class="bsl">ROI on Wagered</div><div class="bsv ${b.roi_on_wagered >= 0 ? 'green' : 'red'}">${pct(b.roi_on_wagered || 0)}</div></div>
+    <div class="br-stat"><div class="bsl">Betting Days</div><div class="bsv">${b.n_betting_days || '—'}</div></div>
+  `;
+
+  if (b.history && b.history.length) drawBankroll(b.history);
+}
+
+function drawBankroll(history) {
+  const { ctx, W, H, el } = initCanvas('bankrollCanvas');
+  const pL = 64, pR = 16, pT = 16, pB = 28;
+  const plotW = W - pL - pR, plotH = H - pT - pB;
+
+  const allBankroll = history.map(d => d.bankroll);
+  const allDeposit  = history.map(d => d.deposited);
+  const maxY = Math.max(...allBankroll, ...allDeposit) * 1.06;
+  const minY = Math.min(0, ...allBankroll) * 1.06;
+  const rangeY = maxY - minY || 1;
+
+  function xp(i) { return pL + (i / (history.length - 1 || 1)) * plotW; }
+  function yp(v) { return pT + plotH - ((v - minY) / rangeY) * plotH; }
+
+  // Grid
+  drawGrid(ctx, pL, pT, pL + plotW, pT + plotH, 5);
+
+  // X axis date labels (up to 8)
+  ctx.fillStyle = C.gray; ctx.font = '9px Space Mono'; ctx.textAlign = 'center';
+  const step = Math.ceil(history.length / 8);
+  for (let i = 0; i < history.length; i += step) {
+    const d = history[i]; const x = xp(i);
+    ctx.fillText(d.date.slice(5), x, pT + plotH + 16); // MM-DD
+  }
+
+  // Y axis
+  ctx.textAlign = 'right'; ctx.fillStyle = C.gray;
+  const yTicks = 5;
+  for (let i = 0; i <= yTicks; i++) {
+    const v = minY + (rangeY / yTicks) * i;
+    const y = yp(v);
+    ctx.fillText('$' + Math.round(v), pL - 8, y + 4);
+    // tick mark
+    ctx.beginPath(); ctx.strokeStyle = C.border; ctx.lineWidth = 1;
+    ctx.moveTo(pL - 4, y); ctx.lineTo(pL, y); ctx.stroke();
+  }
+
+  // Deposited fill (subtle)
+  ctx.beginPath();
+  history.forEach((d, i) => { i === 0 ? ctx.moveTo(xp(i), yp(d.deposited)) : ctx.lineTo(xp(i), yp(d.deposited)); });
+  ctx.lineTo(xp(history.length - 1), yp(minY));
+  ctx.lineTo(xp(0), yp(minY));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(107,117,133,0.08)';
+  ctx.fill();
+
+  // Deposited line — dashed gray
+  ctx.beginPath(); ctx.strokeStyle = C.gray; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+  history.forEach((d, i) => { i === 0 ? ctx.moveTo(xp(i), yp(d.deposited)) : ctx.lineTo(xp(i), yp(d.deposited)); });
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // Bankroll gradient fill
+  const grad = ctx.createLinearGradient(0, pT, 0, pT + plotH);
+  grad.addColorStop(0, 'rgba(201,162,39,0.18)');
+  grad.addColorStop(1, 'rgba(201,162,39,0)');
+  ctx.beginPath();
+  history.forEach((d, i) => { i === 0 ? ctx.moveTo(xp(i), yp(d.bankroll)) : ctx.lineTo(xp(i), yp(d.bankroll)); });
+  ctx.lineTo(xp(history.length - 1), yp(minY));
+  ctx.lineTo(xp(0), yp(minY));
+  ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+
+  // Bankroll line — gold
+  ctx.beginPath(); ctx.strokeStyle = C.gold2; ctx.lineWidth = 2;
+  history.forEach((d, i) => { i === 0 ? ctx.moveTo(xp(i), yp(d.bankroll)) : ctx.lineTo(xp(i), yp(d.bankroll)); });
+  ctx.stroke();
+
+  // Hover
+  el.onmousemove = (e) => {
+    const rect = el.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    let i = Math.round(((mx - pL) / plotW) * (history.length - 1));
+    i = Math.max(0, Math.min(i, history.length - 1));
+    const d = history[i];
+
+    // Crosshair — redraw then overlay
+    drawBankroll(history);
+    const ctx2 = el.getContext('2d');
+    const cx = xp(i);
+    ctx2.save();
+    ctx2.strokeStyle = 'rgba(255,255,255,0.15)'; ctx2.lineWidth = 1; ctx2.setLineDash([3,3]);
+    ctx2.beginPath(); ctx2.moveTo(cx, pT); ctx2.lineTo(cx, pT + plotH); ctx2.stroke();
+    ctx2.setLineDash([]);
+    ctx2.beginPath(); ctx2.arc(cx, yp(d.bankroll), 4, 0, Math.PI * 2);
+    ctx2.fillStyle = C.gold2; ctx2.fill();
+    ctx2.restore();
+
+    let betsHtml = '';
+    if (d.bets && d.bets.length) {
+      betsHtml = d.bets.slice(0, 4).map(b =>
+        `<div class="tip-${b.profit >= 0 ? 'green' : 'red'}">${b.horse} · ${b.outcome} · ${money(b.profit)}</div>`
+      ).join('');
+      if (d.bets.length > 4) betsHtml += `<div class="tip-muted">+${d.bets.length - 4} more</div>`;
+    }
+
+    tip(e,
+      `<b>${d.date}</b>` +
+      `<div><span class="tip-gold">Bankroll: ${money(d.bankroll)}</span></div>` +
+      `<div><span class="tip-muted">Deposited: ${money(d.deposited)}</span></div>` +
+      `<div>Daily P&L: <span class="${d.day_profit >= 0 ? 'tip-green' : 'tip-red'}">${money(d.day_profit || 0)}</span></div>` +
+      `<div>Bets: ${d.n_bets}</div>` +
+      (betsHtml ? `<hr style="border-color:var(--border);margin:6px 0">` + betsHtml : '')
+    );
+  };
+  el.onmouseleave = () => { hideTip(); drawBankroll(history); };
+}
+
+// ════════════════════════════════════════════════════════════
+//  Rolling Charts
+// ════════════════════════════════════════════════════════════
+function renderRolling() {
+  const s = DATA.strategies[activeKey];
+  if (!s.rolling || !s.rolling.length) return;
+  drawRolling('rollRoiCanvas', s.rolling, 'roll_roi', C.gold2);
+  drawRolling('rollWinCanvas', s.rolling, 'roll_win', C.text);
+}
+
+function drawRolling(id, data, key, color) {
+  const { ctx, W, H } = initCanvas(id);
+  const vals = data.map(d => d[key] || 0);
+  const maxV = Math.max(...vals, 0.001);
+  const minV = Math.min(...vals, 0);
+  const rangeV = (maxV - minV) || 0.01;
+  const pL = 40, pR = 8, pT = 8, pB = 20;
+  const plotW = W - pL - pR, plotH = H - pT - pB;
+
+  function xp(i) { return pL + (i / (data.length - 1 || 1)) * plotW; }
+  function yp(v) { return pT + plotH - ((v - minV) / rangeV) * plotH; }
+
+  drawGrid(ctx, pL, pT, pL + plotW, pT + plotH, 3);
+
+  // Zero line if negative range
+  if (minV < 0) {
+    ctx.strokeStyle = C.border2; ctx.lineWidth = 1; ctx.setLineDash([2, 2]);
+    const zy = yp(0);
+    ctx.beginPath(); ctx.moveTo(pL, zy); ctx.lineTo(pL + plotW, zy); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Fill
+  const grad = ctx.createLinearGradient(0, pT, 0, pT + plotH);
+  grad.addColorStop(0, color.replace(')', ',0.25)').replace('rgb', 'rgba').replace('#', 'rgba(').replace('rgba(', 'rgba(').slice(0, -1));
+  // simpler: just use inline rgba
+  grad.addColorStop(0, 'rgba(201,162,39,0.12)');
+  grad.addColorStop(1, 'rgba(201,162,39,0)');
+
+  ctx.beginPath();
+  data.forEach((d, i) => { i === 0 ? ctx.moveTo(xp(i), yp(d[key] || 0)) : ctx.lineTo(xp(i), yp(d[key] || 0)); });
+  ctx.lineTo(xp(data.length - 1), yp(minV));
+  ctx.lineTo(xp(0), yp(minV));
+  ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+
+  // Line
+  ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+  data.forEach((d, i) => { i === 0 ? ctx.moveTo(xp(i), yp(d[key] || 0)) : ctx.lineTo(xp(i), yp(d[key] || 0)); });
+  ctx.stroke();
+
+  // Y labels
+  ctx.fillStyle = C.gray; ctx.font = '9px Space Mono'; ctx.textAlign = 'right';
+  ctx.fillText(pct(maxV, 0), pL - 4, pT + 10);
+  ctx.fillText(pct(minV, 0), pL - 4, pT + plotH);
+
+  // X date labels
+  ctx.textAlign = 'center';
+  [0, Math.floor(data.length / 2), data.length - 1].forEach(i => {
+    if (data[i]) ctx.fillText(data[i].date.slice(5), xp(i), pT + plotH + 14);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  Factor Tabs + Chart
+// ════════════════════════════════════════════════════════════
+function renderFactorTabs() {
+  const s = DATA.strategies[activeKey];
+  const tabsEl = document.getElementById('factor-tabs');
+  tabsEl.innerHTML = '';
+  if (!s.factors) return;
+
+  const keys = Object.keys(s.factors);
+  if (!keys.includes(activeFactorKey)) activeFactorKey = keys[0];
+
+  keys.forEach(k => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (k === activeFactorKey ? ' active' : '');
+    btn.textContent = FACTOR_NAMES[k] || k;
+    btn.onclick = () => { activeFactorKey = k; renderFactorTabs(); renderFactor(); };
+    tabsEl.appendChild(btn);
+  });
+}
+
+function renderFactor() {
+  const s = DATA.strategies[activeKey];
+  if (!s.factors || !s.factors[activeFactorKey]) return;
+  drawFactor(s.factors[activeFactorKey]);
+}
+
+function drawFactor(factorData) {
+  const { ctx, W, H, el } = initCanvas('factorCanvas');
+  const buckets = Object.keys(factorData);
+  if (!buckets.length) return;
+
+  // Sort numerically if bucket looks like a number or range
+  buckets.sort((a, b) => {
+    const na = parseFloat(a), nb = parseFloat(b);
+    return isNaN(na) || isNaN(nb) ? String(a).localeCompare(String(b)) : na - nb;
+  });
+
+  const pL = 110, pR = 110, pT = 16, pB = 16;
+  const nRows = buckets.length;
+  const rowH = (H - pT - pB) / nRows;
+  const barH = Math.max(6, Math.min(28, rowH * 0.65));
+
+  const rois = buckets.map(k => factorData[k].roi || 0);
+  const maxAbs = Math.max(0.01, ...rois.map(Math.abs));
+  const halfW = (W - pL - pR) / 2;
+  const zeroX = pL + halfW;
+
+  function barX(roi) { return zeroX + (roi / maxAbs) * halfW; }
+
+  // Grid
+  ctx.strokeStyle = C.border; ctx.lineWidth = 1;
+  [-1, -0.5, 0, 0.5, 1].forEach(t => {
+    const x = zeroX + t * halfW;
+    ctx.beginPath(); ctx.moveTo(x, pT); ctx.lineTo(x, H - pB); ctx.stroke();
+    ctx.fillStyle = C.gray; ctx.font = '9px Space Mono'; ctx.textAlign = 'center';
+    ctx.fillText(pct(t * maxAbs, 0), x, H - pB + 12);
+  });
+
+  // Zero line (bold)
+  ctx.strokeStyle = C.gray2; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(zeroX, pT); ctx.lineTo(zeroX, H - pB); ctx.stroke();
+
+  const hitZones = [];
+
+  buckets.forEach((b, i) => {
+    const d = factorData[b];
+    const roi = d.roi || 0;
+    const cy = pT + i * rowH + rowH / 2;
+    const by = cy - barH / 2;
+
+    const isPos = roi >= 0;
+    const rx = isPos ? zeroX : barX(roi);
+    const rw = Math.abs(barX(roi) - zeroX);
+
+    // Bar
+    const alpha = 0.3 + 0.7 * (Math.abs(roi) / maxAbs);
+    ctx.fillStyle = isPos ? `rgba(39,201,143,${alpha})` : `rgba(224,82,74,${alpha})`;
+    ctx.beginPath(); ctx.roundRect(rx, by, rw || 1, barH, 3); ctx.fill();
+
+    // Bucket label (left)
+    ctx.fillStyle = C.text; ctx.font = '11px Space Mono'; ctx.textAlign = 'right';
+    let label = String(b).length > 14 ? String(b).slice(0, 12) + '..' : String(b);
+    ctx.fillText(label, pL - 8, cy + 4);
+
+    // ROI value inside/outside bar
+    ctx.fillStyle = C.text; ctx.font = 'bold 10px Space Mono'; ctx.textAlign = isPos ? 'left' : 'right';
+    const roiLabel = pct(roi);
+    ctx.fillText(roiLabel, isPos ? zeroX + rw + 5 : zeroX - rw - 5, cy + 4);
+
+    // Stats (right panel)
+    ctx.fillStyle = C.gray; ctx.font = '9px Space Mono'; ctx.textAlign = 'left';
+    ctx.fillText(`N=${comma(d.n)}  W=${pct(d.win_rate || 0, 0)}`, W - pR + 8, cy + 4);
+
+    hitZones.push({ y: by, h: barH, b, d });
+  });
+
+  el.onmousemove = (e) => {
+    const rect = el.getBoundingClientRect();
+    const my = e.clientY - rect.top;
+    const hit = hitZones.find(z => my >= z.y && my <= z.y + z.h);
+    if (hit) {
+      const d = hit.d;
+      tip(e,
+        `<b>${hit.b}</b>` +
+        `<div>Bets: ${comma(d.n)}</div>` +
+        `<div>ROI: <span class="${d.roi >= 0 ? 'tip-green' : 'tip-red'}">${pct(d.roi || 0)}</span></div>` +
+        `<div>Win%: ${pct(d.win_rate || 0)} &nbsp; Show%: ${pct(d.show_rate || 0)}</div>` +
+        `<div>Net P&L: ${money(d.net_pl || 0)}</div>`
+      );
+    } else { hideTip(); }
+  };
+  el.onmouseleave = hideTip;
+}
+
+// ════════════════════════════════════════════════════════════
+//  Daily Heatmap
+// ════════════════════════════════════════════════════════════
+function renderHeatmap() {
+  const s = DATA.strategies[activeKey];
+  const outer = document.getElementById('heatmap-outer');
+  outer.innerHTML = '';
+  if (!s.bankroll_sim || !s.bankroll_sim.history) return;
+
+  const history = s.bankroll_sim.history;
+
+  // Group by month
+  const byMonth = {};
+  history.forEach(d => {
+    const m = d.date.slice(0, 7); // YYYY-MM
+    if (!byMonth[m]) byMonth[m] = [];
+    byMonth[m].push(d);
+  });
+
+  // Magnitude scale
+  const pls = history.map(d => Math.abs(d.day_profit || 0)).filter(v => v > 0);
+  const p90 = pls.length ? pls.sort((a,b)=>a-b)[Math.floor(pls.length * 0.9)] : 100;
+
+  Object.entries(byMonth).forEach(([month, days]) => {
+    const col = document.createElement('div');
+    col.className = 'heatmap-month';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'heatmap-month-label';
+    lbl.textContent = month.slice(5) + '/' + month.slice(2, 4); // MM/YY
+    col.appendChild(lbl);
+
+    const row = document.createElement('div');
+    row.className = 'heatmap-row';
+
+    days.forEach(d => {
+      const pl = d.day_profit || 0;
+      const cell = document.createElement('div');
+      cell.className = 'hm-cell';
+
+      if (d.n_bets === 0) {
+        cell.style.background = 'var(--panel2)';
+        cell.style.borderColor = 'var(--border)';
+      } else if (pl >= 0) {
+        const intensity = Math.min(0.95, 0.25 + (pl / p90) * 0.7);
+        cell.style.background = `rgba(39,201,143,${intensity})`;
+        cell.style.border = 'none';
+      } else {
+        const intensity = Math.min(0.95, 0.25 + (Math.abs(pl) / p90) * 0.7);
+        cell.style.background = `rgba(224,82,74,${intensity})`;
+        cell.style.border = 'none';
+      }
+
+      cell.onmouseenter = (e) => tip(e,
+        `<b>${d.date}</b>` +
+        `<div>Bets: ${d.n_bets}</div>` +
+        `<div>P&L: <span class="${pl >= 0 ? 'tip-green' : 'tip-red'}">${money(pl)}</span></div>` +
+        (d.day_wagered ? `<div class="tip-muted">Wagered: ${money(d.day_wagered)}</div>` : '')
+      );
+      cell.onmouseleave = hideTip;
+      cell.onmousemove = moveTip;
+      row.appendChild(cell);
+    });
+
+    col.appendChild(row);
+    outer.appendChild(col);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+//  Resize — redraw on window resize
+// ════════════════════════════════════════════════════════════
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (DATA) renderAll(); }, 200);
+});
+
+// ════════════════════════════════════════════════════════════
+//  Start
+// ════════════════════════════════════════════════════════════
+window.addEventListener('load', load);
+</script>
 </body>
 </html>
