@@ -3,716 +3,820 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fig Anomaly System — Strategy Visualizer</title>
+<title>Fig Anomaly System · Strategy Visualizer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg:       #0a0c0f;
-    --surface:  #111418;
-    --border:   #1e2329;
-    --border2:  #2a3040;
-    --gold:     #c9a84c;
-    --gold2:    #e8c870;
-    --gold-dim: rgba(201,168,76,0.15);
-    --green:    #3ddc97;
-    --red:      #e05c5c;
-    --blue:     #5b9cf6;
-    --muted:    #4a5568;
-    --text:     #e2e8f0;
-    --text-dim: #8899aa;
-    --win:      #3ddc97;
-    --show:     #5b9cf6;
-    --blank:    #e05c5c;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
+:root {
+  --bg: #080a0d;
+  --surface: #0f1318;
+  --surface2: #141920;
+  --border: #1c2330;
+  --border2: #263040;
+  --gold: #c8a84b;
+  --gold2: #e8cc7a;
+  --gold-dim: rgba(200,168,75,0.12);
+  --green: #38d98a;
+  --red: #e05555;
+  --blue: #4f8ef5;
+  --purple: #9b72f5;
+  --orange: #f5823a;
+  --teal: #34cdb8;
+  --muted: #3a4558;
+  --text: #dde4f0;
+  --text2: #7a8fa8;
+  --text3: #4a5a70;
+  --win-c: #38d98a;
+  --show-c: #4f8ef5;
+  --blank-c: #e05555;
+  --hot-c: rgba(232,204,122,0.08);
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:smooth; }
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Mono',monospace;
+  font-size:12.5px;
+  line-height:1.65;
+}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    line-height: 1.6;
-    min-height: 100vh;
-  }
+/* grain */
+body::before {
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;opacity:0.4;
+}
 
-  /* ── GRAIN OVERLAY ── */
-  body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none; z-index: 9999; opacity: 0.35;
-  }
+/* ─── HEADER ─────────────────────────────── */
+.hd {
+  padding:52px 48px 40px;
+  border-bottom:1px solid var(--border);
+  position:relative;
+  background:linear-gradient(160deg,#0d1520 0%,var(--bg) 60%);
+}
+.hd::after {
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,var(--gold) 35%,var(--gold2) 65%,transparent 100%);
+}
+.hd-pre {
+  font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:10px;
+}
+.hd-pre::before { content:'';width:24px;height:1px;background:var(--gold);display:block; }
+h1 {
+  font-family:'Playfair Display',serif;
+  font-size:clamp(30px,4.5vw,54px);
+  font-weight:400;letter-spacing:-.025em;line-height:1.05;
+}
+h1 em { font-style:italic;color:var(--gold); }
+.hd-meta {
+  margin-top:18px;display:flex;gap:28px;flex-wrap:wrap;color:var(--text2);font-size:11px;
+}
+.hd-meta span { display:flex;align-items:center;gap:7px; }
+.pip { width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0; }
+.hd-honest {
+  margin-top:20px;padding:14px 18px;
+  background:rgba(224,85,85,0.07);border:1px solid rgba(224,85,85,0.2);
+  border-radius:6px;max-width:680px;font-size:11px;color:var(--text2);line-height:1.7;
+}
+.hd-honest strong { color:var(--red); }
 
-  /* ── HEADER ── */
-  .header {
-    padding: 48px 40px 32px;
-    border-bottom: 1px solid var(--border);
-    background: linear-gradient(180deg, #0d1117 0%, var(--bg) 100%);
-    position: relative;
-    overflow: hidden;
-  }
-  .header::after {
-    content: '';
-    position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  }
-  .header-eyebrow {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 12px;
-  }
-  .header h1 {
-    font-family: 'Fraunces', serif;
-    font-size: clamp(28px, 4vw, 48px);
-    font-weight: 300;
-    color: var(--text);
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-  }
-  .header h1 em {
-    font-style: italic;
-    color: var(--gold);
-  }
-  .header-sub {
-    margin-top: 12px;
-    color: var(--text-dim);
-    font-size: 12px;
-    display: flex; gap: 24px; flex-wrap: wrap;
-  }
-  .header-sub span { display: flex; align-items: center; gap: 6px; }
-  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+/* ─── LAYOUT ─────────────────────────────── */
+.main { max-width:1480px;margin:0 auto;padding:36px 48px 100px; }
+.sec { margin-bottom:52px; }
+.sec-hd {
+  display:flex;align-items:baseline;gap:14px;
+  margin-bottom:22px;padding-bottom:12px;
+  border-bottom:1px solid var(--border);
+}
+.sec-num { font-size:10px;letter-spacing:.2em;color:var(--gold);text-transform:uppercase; }
+.sec-title { font-family:'Playfair Display',serif;font-size:19px;font-weight:400;color:var(--text); }
+.sec-sub { font-size:11px;color:var(--text3);margin-left:auto; }
 
-  /* ── LAYOUT ── */
-  .main { max-width: 1400px; margin: 0 auto; padding: 32px 40px 80px; }
+/* ─── STRATEGY CARDS ─────────────────────── */
+.card-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(270px,1fr));
+  gap:14px;
+}
+.scard {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;padding:20px;
+  cursor:pointer;
+  transition:border-color .18s,transform .15s,box-shadow .18s;
+  position:relative;overflow:hidden;
+}
+.scard::before {
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--c,var(--border));transition:opacity .18s;
+}
+.scard:hover { border-color:var(--border2);transform:translateY(-2px);box-shadow:0 10px 40px rgba(0,0,0,.45); }
+.scard.on { border-color:var(--c);box-shadow:0 0 0 1px var(--gold-dim),0 10px 40px rgba(0,0,0,.4); }
+.scard-top { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px; }
+.scard-name { font-family:'Playfair Display',serif;font-size:15px;line-height:1.3;color:var(--text); }
+.scard-desc { font-size:10px;color:var(--text3);margin-top:2px; }
+.badge {
+  font-size:9px;letter-spacing:.08em;padding:2px 8px;border-radius:99px;
+  border:1px solid;white-space:nowrap;flex-shrink:0;
+}
+/* dual ROI display */
+.roi-row { display:flex;align-items:flex-end;gap:14px;margin-bottom:4px; }
+.roi-big { font-family:'Playfair Display',serif;font-size:34px;font-weight:700;line-height:1; }
+.roi-cold-wrap { padding-bottom:3px; }
+.roi-cold-label { font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:1px; }
+.roi-cold { font-size:16px;font-weight:500; }
+.roi-pos { color:var(--green); }
+.roi-neg { color:var(--red); }
+.roi-hot-note { font-size:10px;color:var(--text3);margin-bottom:14px; }
+.scard-stats { display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px; }
+.stat { text-align:center;background:var(--surface2);border-radius:4px;padding:7px 4px; }
+.stat-v { font-size:14px;font-weight:500; }
+.stat-l { font-size:9px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-top:1px; }
+.outcome-bar { height:3px;border-radius:2px;display:flex;overflow:hidden;gap:1px; }
+.ob-win { background:var(--win-c); }
+.ob-show { background:var(--show-c); }
+.ob-blank { background:var(--blank-c); }
 
-  /* ── SECTION TITLE ── */
-  .section-title {
-    font-family: 'Fraunces', serif;
-    font-size: 18px;
-    font-weight: 300;
-    color: var(--text-dim);
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: baseline; gap: 12px;
-  }
-  .section-title strong {
-    color: var(--text);
-    font-weight: 700;
-  }
-  .section-title .label {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--gold);
-  }
+/* ─── EQUITY CHART ───────────────────────── */
+.chart-box {
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:26px;
+}
+.chart-legend {
+  display:flex;gap:18px;flex-wrap:wrap;margin-bottom:20px;
+}
+.leg-item {
+  display:flex;align-items:center;gap:8px;font-size:11px;
+  color:var(--text2);cursor:pointer;transition:color .15s;user-select:none;
+}
+.leg-item:hover { color:var(--text); }
+.leg-item.off { opacity:.3; }
+.leg-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+.leg-name { }
+.leg-roi { font-weight:500;font-size:10px; }
+canvas { display:block;width:100%; }
+#eqCanvas { height:340px; }
 
-  /* ── STRATEGY CARDS ── */
-  .strategy-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 48px;
-  }
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 20px;
-    cursor: pointer;
-    transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-  .card::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: var(--card-accent, var(--border));
-    transition: background 0.2s;
-  }
-  .card:hover {
-    border-color: var(--border2);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  }
-  .card.active {
-    border-color: var(--gold);
-    box-shadow: 0 0 0 1px var(--gold-dim), 0 8px 32px rgba(201,168,76,0.15);
-  }
-  .card.active::before { background: var(--gold); }
+/* ─── SCATTER ────────────────────────────── */
+#scCanvas { height:280px; }
 
-  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-  .card-name {
-    font-family: 'Fraunces', serif;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1.3;
-  }
-  .card-badge {
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 99px;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-  }
-  .badge-gold { background: rgba(201,168,76,0.2); color: var(--gold2); border: 1px solid rgba(201,168,76,0.3); }
-  .badge-green { background: rgba(61,220,151,0.15); color: var(--green); border: 1px solid rgba(61,220,151,0.25); }
-  .badge-blue { background: rgba(91,156,246,0.15); color: var(--blue); border: 1px solid rgba(91,156,246,0.25); }
-  .badge-red { background: rgba(224,92,92,0.15); color: var(--red); border: 1px solid rgba(224,92,92,0.25); }
+/* ─── FACTOR GRIDS ───────────────────────── */
+.factor-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+  gap:16px;
+}
+.fc {
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:20px;
+}
+.fc-title {
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:14px;
+}
+.fc-row { display:flex;align-items:center;gap:9px;margin-bottom:9px; }
+.fc-lbl { width:72px;font-size:11px;color:var(--text2);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.fc-bar-bg { flex:1;height:18px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden;position:relative; }
+.fc-bar { height:100%;border-radius:3px;min-width:2px; }
+.fc-pos { background:linear-gradient(90deg,rgba(200,168,75,.5),var(--gold)); }
+.fc-neg { background:linear-gradient(90deg,rgba(224,85,85,.5),var(--red)); }
+.fc-roi { width:50px;font-size:11px;text-align:right;flex-shrink:0; }
+.fc-n { width:32px;font-size:10px;color:var(--text3);text-align:right;flex-shrink:0; }
+/* hot/cold split bars */
+.fc-split { display:flex;height:18px;border-radius:3px;overflow:hidden;gap:1px; }
+.fc-split-hot { background:rgba(232,204,122,.5); }
+.fc-split-cold { background:rgba(79,142,245,.5); }
 
-  .card-roi {
-    font-family: 'Fraunces', serif;
-    font-size: 32px;
-    font-weight: 700;
-    line-height: 1;
-    margin-bottom: 4px;
-  }
-  .roi-pos { color: var(--green); }
-  .roi-neg { color: var(--red); }
-  .card-net { font-size: 11px; color: var(--text-dim); margin-bottom: 16px; }
+/* ─── SYSTEM RULES CARD ──────────────────── */
+.rules-grid {
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+}
+@media(max-width:700px){ .rules-grid{grid-template-columns:1fr;} }
+.rule-box {
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:22px;
+}
+.rule-box-title {
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:14px;
+}
+.rule-item {
+  display:flex;align-items:flex-start;gap:10px;margin-bottom:9px;font-size:11.5px;
+}
+.rule-icon { flex-shrink:0;font-size:13px;margin-top:0; }
+.rule-text { color:var(--text2);line-height:1.55; }
+.rule-text strong { color:var(--text); }
+.bet-table { width:100%;border-collapse:collapse;font-size:11.5px; }
+.bet-table th { color:var(--text3);font-weight:400;letter-spacing:.1em;font-size:10px;text-transform:uppercase;padding:0 0 8px;text-align:left; }
+.bet-table td { padding:5px 0;color:var(--text2);border-top:1px solid var(--border);vertical-align:top; }
+.bet-table td:last-child { text-align:right; }
+.bet-table strong { color:var(--text); }
 
-  .card-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-  .stat { text-align: center; }
-  .stat-val { font-size: 15px; font-weight: 500; color: var(--text); }
-  .stat-lbl { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+/* ─── TRACK TABLE ───────────────────────── */
+.track-table { width:100%;border-collapse:collapse;font-size:11.5px; }
+.track-table th {
+  color:var(--text3);font-weight:400;letter-spacing:.1em;font-size:10px;
+  text-transform:uppercase;padding:0 12px 10px 0;text-align:left;
+}
+.track-table td { padding:8px 12px 8px 0;border-top:1px solid var(--border);color:var(--text2); }
+.track-table td:first-child { color:var(--text);font-weight:500; }
+.track-bar-cell { width:200px; }
+.track-bar-wrap { height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden; }
+.track-bar-fill { height:100%;border-radius:3px;background:var(--gold); }
 
-  .outcome-bar {
-    height: 4px;
-    border-radius: 2px;
-    display: flex;
-    overflow: hidden;
-    margin-top: 14px;
-    gap: 1px;
-  }
-  .bar-win { background: var(--win); }
-  .bar-show { background: var(--show); }
-  .bar-blank { background: var(--blank); }
+/* ─── TOOLTIP ───────────────────────────── */
+.tip {
+  position:fixed;background:#16202e;border:1px solid var(--border2);
+  border-radius:7px;padding:12px 16px;font-size:11px;
+  pointer-events:none;z-index:10000;display:none;min-width:170px;
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
+}
+.tip-date { color:var(--gold);font-size:10px;letter-spacing:.08em;margin-bottom:7px; }
+.tip-row { display:flex;justify-content:space-between;gap:18px;margin-bottom:3px; }
+.tip-row span:last-child { font-weight:500; }
+.tip-divider { height:1px;background:var(--border);margin:7px 0; }
 
-  /* ── EQUITY CHART ── */
-  .chart-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 48px;
-  }
-  .chart-legend {
-    display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;
-  }
-  .legend-item {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 11px; color: var(--text-dim);
-    cursor: pointer;
-    transition: color 0.15s;
-  }
-  .legend-item:hover { color: var(--text); }
-  .legend-item.hidden { opacity: 0.35; }
-  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .legend-roi { font-weight: 500; margin-left: 2px; }
+/* ─── RESPONSIVE ─────────────────────────── */
+@media(max-width:800px){
+  .hd { padding:36px 22px 28px; }
+  .main { padding:24px 22px 70px; }
+  .card-grid { grid-template-columns:1fr 1fr; }
+  .factor-grid { grid-template-columns:1fr; }
+  #eqCanvas { height:240px; }
+}
+@media(max-width:500px){
+  .card-grid { grid-template-columns:1fr; }
+}
 
-  #equityChart {
-    width: 100%;
-    height: 320px;
-    display: block;
-  }
-
-  /* ── FACTOR CHARTS ── */
-  .factors-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 20px;
-    margin-bottom: 48px;
-  }
-  .factor-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 20px;
-  }
-  .factor-title {
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 16px;
-  }
-  .factor-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  .factor-label {
-    width: 80px;
-    font-size: 11px;
-    color: var(--text-dim);
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-  .factor-bar-wrap {
-    flex: 1;
-    height: 20px;
-    background: rgba(255,255,255,0.04);
-    border-radius: 3px;
-    overflow: hidden;
-    position: relative;
-  }
-  .factor-bar {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
-    display: flex; align-items: center; justify-content: flex-end;
-    padding-right: 6px;
-  }
-  .factor-bar-roi { background: linear-gradient(90deg, rgba(201,168,76,0.6), var(--gold)); }
-  .factor-bar-neg { background: linear-gradient(90deg, rgba(224,92,92,0.6), var(--red)); }
-  .factor-roi-val {
-    width: 52px;
-    font-size: 11px;
-    text-align: right;
-    flex-shrink: 0;
-  }
-  .factor-n {
-    width: 30px;
-    font-size: 10px;
-    color: var(--muted);
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  /* ── TOOLTIP ── */
-  .tooltip {
-    position: fixed;
-    background: #1a2030;
-    border: 1px solid var(--border2);
-    border-radius: 6px;
-    padding: 10px 14px;
-    font-size: 11px;
-    pointer-events: none;
-    z-index: 1000;
-    display: none;
-    min-width: 160px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  }
-  .tooltip-date { color: var(--gold); font-size: 10px; margin-bottom: 6px; }
-  .tooltip-row { display: flex; justify-content: space-between; gap: 16px; }
-  .tooltip-row span:last-child { font-weight: 500; }
-
-  /* ── SCROLL ANIM ── */
-  .fade-in {
-    opacity: 0; transform: translateY(16px);
-    animation: fadeIn 0.5s ease forwards;
-  }
-  @keyframes fadeIn {
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .fade-in:nth-child(1) { animation-delay: 0.05s; }
-  .fade-in:nth-child(2) { animation-delay: 0.1s; }
-  .fade-in:nth-child(3) { animation-delay: 0.15s; }
-  .fade-in:nth-child(4) { animation-delay: 0.2s; }
-  .fade-in:nth-child(5) { animation-delay: 0.25s; }
-  .fade-in:nth-child(6) { animation-delay: 0.3s; }
-  .fade-in:nth-child(7) { animation-delay: 0.35s; }
-  .fade-in:nth-child(8) { animation-delay: 0.4s; }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 768px) {
-    .header { padding: 32px 20px 24px; }
-    .main { padding: 24px 20px 60px; }
-    .strategy-grid { grid-template-columns: 1fr 1fr; }
-    .factors-grid { grid-template-columns: 1fr; }
-    #equityChart { height: 220px; }
-  }
-  @media (max-width: 480px) {
-    .strategy-grid { grid-template-columns: 1fr; }
-  }
+/* anim */
+.fade { opacity:0;transform:translateY(14px);animation:fi .5s ease forwards; }
+@keyframes fi { to{opacity:1;transform:translateY(0);} }
 </style>
 </head>
 <body>
 
-<header class="header">
-  <div class="header-eyebrow">Fig Anomaly System · Jan–Feb 2026 · 10 Tracks</div>
+<header class="hd">
+  <div class="hd-pre">Fig Anomaly System</div>
   <h1>Strategy <em>Visualizer</em></h1>
-  <div class="header-sub">
-    <span><span class="dot"></span>206 qualifying bets</span>
-    <span><span class="dot"></span>42 racing days</span>
-    <span><span class="dot"></span>Dirt · 4YO+ · No maiden</span>
-    <span><span class="dot"></span>Tote odds where available</span>
+  <div class="hd-meta" id="hdMeta"></div>
+  <div class="hd-honest">
+    <strong>Honest context:</strong> The +68% headline ROI is inflated by a 10-day hot streak (Feb 11–21) where win rate hit 72%.
+    Outside that window the baseline is <strong style="color:var(--gold)">+12% ROI</strong> — still positive, but very different.
+    Every card shows both numbers. More data (Aug 2025 onward) is loading — reload to update.
   </div>
 </header>
 
 <div class="main">
 
-  <!-- STRATEGY CARDS -->
-  <div class="section-title">
-    <span class="label">01</span>
-    <strong>Strategy Comparison</strong>
-    — click any card to toggle on equity curve
+  <!-- 01 SYSTEM RULES -->
+  <div class="sec">
+    <div class="sec-hd">
+      <span class="sec-num">01</span>
+      <span class="sec-title">The System</span>
+      <span class="sec-sub">What qualifies a bet</span>
+    </div>
+    <div class="rules-grid">
+      <div class="rule-box">
+        <div class="rule-box-title">Entry Filters — all must pass</div>
+        <div class="rule-item"><span class="rule-icon">🏇</span><span class="rule-text"><strong>Dirt surface only</strong> — turf figs behave differently, excluded</span></div>
+        <div class="rule-item"><span class="rule-icon">🎂</span><span class="rule-text"><strong>4YO or older</strong> — 3-year-olds are developing, figs unreliable</span></div>
+        <div class="rule-item"><span class="rule-icon">📊</span><span class="rule-text"><strong>All horses must have published speed figures</strong> — no debut horses</span></div>
+        <div class="rule-item"><span class="rule-icon">🚫</span><span class="rule-text"><strong>No maiden races</strong> — unproven horses, figs meaningless</span></div>
+        <div class="rule-item"><span class="rule-icon">🚫</span><span class="rule-text"><strong>No also-eligible (AE) horses</strong> — last-minute additions wreck form analysis</span></div>
+        <div class="rule-item"><span class="rule-icon">💰</span><span class="rule-text"><strong>Claiming or Allowance level only</strong> — consistent competition grade</span></div>
+        <div class="rule-item"><span class="rule-icon">🔢</span><span class="rule-text"><strong>Top fig ≥ 90</strong> — below this, no measurable edge in the data</span></div>
+        <div class="rule-item"><span class="rule-icon">📐</span><span class="rule-text"><strong>Fig gap ≥ 5 points</strong> (v7: ≥ 8) — horse must lead field clearly</span></div>
+        <div class="rule-item"><span class="rule-icon">💸</span><span class="rule-text"><strong>Must be going off at 3/1 or higher</strong> — no value at shorter prices</span></div>
+      </div>
+      <div class="rule-box">
+        <div class="rule-box-title">Bet Sizing</div>
+        <table class="bet-table">
+          <thead><tr><th>Odds at post</th><th>Bet</th><th>Total</th></tr></thead>
+          <tbody>
+            <tr><td><strong>3/1 – 8/1</strong></td><td>$2 win + $2 show</td><td>$4</td></tr>
+            <tr><td style="color:var(--red)"><strong>8/1 – 12/1 ← SKIP</strong></td><td colspan="2" style="color:var(--text3)">Dead zone — 18% win rate, worst ROI segment. Pass entirely.</td></tr>
+            <tr><td><strong>12/1 +</strong></td><td>$2 show only</td><td>$2</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:20px" class="rule-box-title">The Core Thesis</div>
+        <div style="font-size:11.5px;color:var(--text2);line-height:1.7">
+          Speed figures measure how fast a horse <em>actually ran</em>. When the fastest horse on paper is going off at 3/1+ it means the crowd is betting something else — trainer hype, recency bias, jockey popularity. The system bets that the crowd is wrong more often than it's right. A horse at 5/1 should win ~17% of the time in a fair market. Our system hits 33%+ across all qualifying bets. That's the edge.
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="strategy-grid" id="strategyGrid"></div>
 
-  <!-- EQUITY CURVE -->
-  <div class="section-title">
-    <span class="label">02</span>
-    <strong>Cumulative P&L Curve</strong>
-    — Jan 1 → Feb 28, 2026
-  </div>
-  <div class="chart-wrap">
-    <div class="chart-legend" id="chartLegend"></div>
-    <canvas id="equityChart"></canvas>
+  <!-- 02 STRATEGY CARDS -->
+  <div class="sec">
+    <div class="sec-hd">
+      <span class="sec-num">02</span>
+      <span class="sec-title">Strategies</span>
+      <span class="sec-sub">Click to toggle on equity curve · Each shows full ROI and ex-hot-streak ROI</span>
+    </div>
+    <div class="card-grid" id="cardGrid"></div>
   </div>
 
-  <!-- FACTOR ANALYSIS -->
-  <div class="section-title">
-    <span class="label">03</span>
-    <strong>Factor Analysis</strong>
-    — ROI by individual variable
+  <!-- 03 EQUITY CURVE -->
+  <div class="sec">
+    <div class="sec-hd">
+      <span class="sec-num">03</span>
+      <span class="sec-title">Cumulative P&amp;L</span>
+      <span class="sec-sub">Gold shading = Feb 11–21 hot streak · Hover for detail</span>
+    </div>
+    <div class="chart-box">
+      <div class="chart-legend" id="chartLeg"></div>
+      <canvas id="eqCanvas"></canvas>
+    </div>
   </div>
-  <div class="factors-grid" id="factorsGrid"></div>
+
+  <!-- 04 SCATTER -->
+  <div class="sec">
+    <div class="sec-hd">
+      <span class="sec-num">04</span>
+      <span class="sec-title">Individual Bets — Odds vs Profit</span>
+      <span class="sec-sub">Green = win · Blue = show · Red = blank · Gold ring = hot streak</span>
+    </div>
+    <div class="chart-box">
+      <canvas id="scCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- 05 FACTOR ANALYSIS -->
+  <div class="sec">
+    <div class="sec-hd">
+      <span class="sec-num">05</span>
+      <span class="sec-title">Factor Analysis</span>
+      <span class="sec-sub">ROI by single variable — full dataset vs ex-hot-streak (gold / blue bars)</span>
+    </div>
+    <div class="factor-grid" id="factorGrid"></div>
+  </div>
+
+  <!-- 06 TRACK BREAKDOWN -->
+  <div class="sec">
+    <div class="sec-hd">
+      <span class="sec-num">06</span>
+      <span class="sec-title">Track Breakdown</span>
+      <span class="sec-sub">Sorted by ROI</span>
+    </div>
+    <div class="chart-box">
+      <table class="track-table" id="trackTable">
+        <thead><tr><th>Track</th><th>Bets</th><th>Win%</th><th>Show%</th><th>Wagered</th><th>Net P&L</th><th>ROI</th><th class="track-bar-cell"></th></tr></thead>
+        <tbody id="trackBody"></tbody>
+      </table>
+    </div>
+  </div>
 
 </div>
 
-<div class="tooltip" id="tooltip"></div>
+<div class="tip" id="tip"></div>
 
 <script>
-const RAW = {"dates": ["2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-10", "2026-01-11", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-24", "2026-01-25", "2026-01-28", "2026-01-30", "2026-01-31", "2026-02-01", "2026-02-04", "2026-02-05", "2026-02-06", "2026-02-07", "2026-02-08", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-14", "2026-02-15", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", "2026-02-21", "2026-02-22", "2026-02-26", "2026-02-27", "2026-02-28"], "strategies": {"v1_baseline": {"n": 206, "wins": 69, "shows": 63, "blanks": 74, "win_rate": 33.5, "show_rate": 64.1, "wagered": 732.0, "returned": 1230.82, "net": 498.82, "roi": 68.1, "daily_pl": [{"date": "2026-01-01", "profit": -7.06, "cum": -7.06, "n": 6}, {"date": "2026-01-02", "profit": -5.38, "cum": -12.44, "n": 7}, {"date": "2026-01-03", "profit": 5.7, "cum": -6.74, "n": 5}, {"date": "2026-01-04", "profit": -10.0, "cum": -16.74, "n": 3}, {"date": "2026-01-07", "profit": 15.4, "cum": -1.34, "n": 5}, {"date": "2026-01-08", "profit": -5.2, "cum": -6.54, "n": 4}, {"date": "2026-01-09", "profit": 7.1, "cum": 0.56, "n": 8}, {"date": "2026-01-10", "profit": 14.6, "cum": 15.16, "n": 3}, {"date": "2026-01-11", "profit": -8.2, "cum": 6.96, "n": 6}, {"date": "2026-01-15", "profit": 22.6, "cum": 29.56, "n": 6}, {"date": "2026-01-16", "profit": -19.44, "cum": 10.12, "n": 8}, {"date": "2026-01-17", "profit": -9.68, "cum": 0.44, "n": 6}, {"date": "2026-01-18", "profit": 14.56, "cum": 15.0, "n": 6}, {"date": "2026-01-19", "profit": -7.4, "cum": 7.6, "n": 3}, {"date": "2026-01-21", "profit": -9.8, "cum": -2.2, "n": 4}, {"date": "2026-01-22", "profit": -7.22, "cum": -9.42, "n": 6}, {"date": "2026-01-23", "profit": -4.64, "cum": -14.06, "n": 8}, {"date": "2026-01-24", "profit": 25.4, "cum": 11.34, "n": 4}, {"date": "2026-01-25", "profit": -1.2, "cum": 10.14, "n": 2}, {"date": "2026-01-28", "profit": 11.8, "cum": 21.94, "n": 1}, {"date": "2026-01-30", "profit": 8.0, "cum": 29.94, "n": 1}, {"date": "2026-01-31", "profit": 11.6, "cum": 41.54, "n": 2}, {"date": "2026-02-01", "profit": -2.0, "cum": 39.54, "n": 1}, {"date": "2026-02-04", "profit": 4.4, "cum": 43.94, "n": 3}, {"date": "2026-02-05", "profit": -2.18, "cum": 41.76, "n": 10}, {"date": "2026-02-06", "profit": 18.52, "cum": 60.28, "n": 3}, {"date": "2026-02-07", "profit": 6.4, "cum": 66.68, "n": 3}, {"date": "2026-02-08", "profit": -1.6, "cum": 65.08, "n": 1}, {"date": "2026-02-11", "profit": 60.86, "cum": 125.94, "n": 9}, {"date": "2026-02-12", "profit": 33.4, "cum": 159.34, "n": 7}, {"date": "2026-02-13", "profit": 36.08, "cum": 195.42, "n": 6}, {"date": "2026-02-14", "profit": 72.68, "cum": 268.1, "n": 8}, {"date": "2026-02-15", "profit": 67.36, "cum": 335.46, "n": 7}, {"date": "2026-02-17", "profit": 11.8, "cum": 347.26, "n": 1}, {"date": "2026-02-18", "profit": 23.4, "cum": 370.66, "n": 4}, {"date": "2026-02-19", "profit": 20.38, "cum": 391.04, "n": 1}, {"date": "2026-02-20", "profit": 44.1, "cum": 435.14, "n": 9}, {"date": "2026-02-21", "profit": 66.68, "cum": 501.82, "n": 9}, {"date": "2026-02-22", "profit": 10.6, "cum": 512.42, "n": 4}, {"date": "2026-02-26", "profit": -10.0, "cum": 502.42, "n": 3}, {"date": "2026-02-27", "profit": 0.2, "cum": 502.62, "n": 5}, {"date": "2026-02-28", "profit": -3.8, "cum": 498.82, "n": 8}]}, "v7_refined": {"n": 89, "wins": 35, "shows": 26, "blanks": 28, "win_rate": 39.3, "show_rate": 68.5, "wagered": 324.0, "returned": 564.8, "net": 240.8, "roi": 74.3, "daily_pl": [{"date": "2026-01-01", "profit": -4.66, "cum": -4.66, "n": 2}, {"date": "2026-01-02", "profit": -1.44, "cum": -6.1, "n": 4}, {"date": "2026-01-03", "profit": 6.0, "cum": -0.1, "n": 1}, {"date": "2026-01-04", "profit": 0, "cum": -0.1, "n": 0}, {"date": "2026-01-07", "profit": 0, "cum": -0.1, "n": 0}, {"date": "2026-01-08", "profit": -0.4, "cum": -0.5, "n": 1}, {"date": "2026-01-09", "profit": -6.1, "cum": -6.6, "n": 3}, {"date": "2026-01-10", "profit": 1.8, "cum": -4.8, "n": 1}, {"date": "2026-01-11", "profit": -1.6, "cum": -6.4, "n": 3}, {"date": "2026-01-15", "profit": 13.0, "cum": 6.6, "n": 3}, {"date": "2026-01-16", "profit": -5.4, "cum": 1.2, "n": 2}, {"date": "2026-01-17", "profit": -3.0, "cum": -1.8, "n": 3}, {"date": "2026-01-18", "profit": 19.36, "cum": 17.56, "n": 4}, {"date": "2026-01-19", "profit": -4.0, "cum": 13.56, "n": 1}, {"date": "2026-01-21", "profit": -7.8, "cum": 5.76, "n": 3}, {"date": "2026-01-22", "profit": -5.8, "cum": -0.04, "n": 2}, {"date": "2026-01-23", "profit": -7.4, "cum": -7.44, "n": 3}, {"date": "2026-01-24", "profit": 18.2, "cum": 10.76, "n": 3}, {"date": "2026-01-25", "profit": -1.2, "cum": 9.56, "n": 2}, {"date": "2026-01-28", "profit": 0, "cum": 9.56, "n": 0}, {"date": "2026-01-30", "profit": 0, "cum": 9.56, "n": 0}, {"date": "2026-01-31", "profit": 15.6, "cum": 25.16, "n": 1}, {"date": "2026-02-01", "profit": 0, "cum": 25.16, "n": 0}, {"date": "2026-02-04", "profit": 3.32, "cum": 28.48, "n": 2}, {"date": "2026-02-05", "profit": -5.38, "cum": 23.1, "n": 6}, {"date": "2026-02-06", "profit": 14.92, "cum": 38.02, "n": 1}, {"date": "2026-02-07", "profit": -2.0, "cum": 36.02, "n": 2}, {"date": "2026-02-08", "profit": -1.6, "cum": 34.42, "n": 1}, {"date": "2026-02-11", "profit": 46.36, "cum": 80.78, "n": 6}, {"date": "2026-02-12", "profit": 20.2, "cum": 100.98, "n": 2}, {"date": "2026-02-13", "profit": 2.4, "cum": 103.38, "n": 3}, {"date": "2026-02-14", "profit": 57.08, "cum": 160.46, "n": 5}, {"date": "2026-02-15", "profit": 19.7, "cum": 180.16, "n": 2}, {"date": "2026-02-17", "profit": 0, "cum": 180.16, "n": 0}, {"date": "2026-02-18", "profit": 22.0, "cum": 202.16, "n": 3}, {"date": "2026-02-19", "profit": 0, "cum": 202.16, "n": 0}, {"date": "2026-02-20", "profit": 27.04, "cum": 229.2, "n": 6}, {"date": "2026-02-21", "profit": 8.8, "cum": 238.0, "n": 1}, {"date": "2026-02-22", "profit": 10.6, "cum": 248.6, "n": 4}, {"date": "2026-02-26", "profit": 0, "cum": 248.6, "n": 0}, {"date": "2026-02-27", "profit": -7.8, "cum": 240.8, "n": 3}, {"date": "2026-02-28", "profit": 0, "cum": 240.8, "n": 0}]}, "wed_sat": {"n": 74, "wins": 35, "shows": 13, "blanks": 26, "win_rate": 47.3, "show_rate": 64.9, "wagered": 248.0, "returned": 543.64, "net": 295.64, "roi": 119.2, "daily_pl": [{"date": "2026-01-01", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-02", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-03", "profit": 5.7, "cum": 5.7, "n": 5}, {"date": "2026-01-04", "profit": 0, "cum": 5.7, "n": 0}, {"date": "2026-01-07", "profit": 15.4, "cum": 21.1, "n": 5}, {"date": "2026-01-08", "profit": 0, "cum": 21.1, "n": 0}, {"date": "2026-01-09", "profit": 0, "cum": 21.1, "n": 0}, {"date": "2026-01-10", "profit": 14.6, "cum": 35.7, "n": 3}, {"date": "2026-01-11", "profit": 0, "cum": 35.7, "n": 0}, {"date": "2026-01-15", "profit": 0, "cum": 35.7, "n": 0}, {"date": "2026-01-16", "profit": 0, "cum": 35.7, "n": 0}, {"date": "2026-01-17", "profit": -9.68, "cum": 26.02, "n": 6}, {"date": "2026-01-18", "profit": 0, "cum": 26.02, "n": 0}, {"date": "2026-01-19", "profit": 0, "cum": 26.02, "n": 0}, {"date": "2026-01-21", "profit": -9.8, "cum": 16.22, "n": 4}, {"date": "2026-01-22", "profit": 0, "cum": 16.22, "n": 0}, {"date": "2026-01-23", "profit": 0, "cum": 16.22, "n": 0}, {"date": "2026-01-24", "profit": 25.4, "cum": 41.62, "n": 4}, {"date": "2026-01-25", "profit": 0, "cum": 41.62, "n": 0}, {"date": "2026-01-28", "profit": 11.8, "cum": 53.42, "n": 1}, {"date": "2026-01-30", "profit": 0, "cum": 53.42, "n": 0}, {"date": "2026-01-31", "profit": 11.6, "cum": 65.02, "n": 2}, {"date": "2026-02-01", "profit": 0, "cum": 65.02, "n": 0}, {"date": "2026-02-04", "profit": 4.4, "cum": 69.42, "n": 3}, {"date": "2026-02-05", "profit": 0, "cum": 69.42, "n": 0}, {"date": "2026-02-06", "profit": 0, "cum": 69.42, "n": 0}, {"date": "2026-02-07", "profit": 6.4, "cum": 75.82, "n": 3}, {"date": "2026-02-08", "profit": 0, "cum": 75.82, "n": 0}, {"date": "2026-02-11", "profit": 60.86, "cum": 136.68, "n": 9}, {"date": "2026-02-12", "profit": 0, "cum": 136.68, "n": 0}, {"date": "2026-02-13", "profit": 0, "cum": 136.68, "n": 0}, {"date": "2026-02-14", "profit": 72.68, "cum": 209.36, "n": 8}, {"date": "2026-02-15", "profit": 0, "cum": 209.36, "n": 0}, {"date": "2026-02-17", "profit": 0, "cum": 209.36, "n": 0}, {"date": "2026-02-18", "profit": 23.4, "cum": 232.76, "n": 4}, {"date": "2026-02-19", "profit": 0, "cum": 232.76, "n": 0}, {"date": "2026-02-20", "profit": 0, "cum": 232.76, "n": 0}, {"date": "2026-02-21", "profit": 66.68, "cum": 299.44, "n": 9}, {"date": "2026-02-22", "profit": 0, "cum": 299.44, "n": 0}, {"date": "2026-02-26", "profit": 0, "cum": 299.44, "n": 0}, {"date": "2026-02-27", "profit": 0, "cum": 299.44, "n": 0}, {"date": "2026-02-28", "profit": -3.8, "cum": 295.64, "n": 8}]}, "rank_6plus": {"n": 31, "wins": 14, "shows": 6, "blanks": 11, "win_rate": 45.2, "show_rate": 64.5, "wagered": 84.0, "returned": 253.5, "net": 169.5, "roi": 201.8, "daily_pl": [{"date": "2026-01-01", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-02", "profit": 0.4, "cum": 0.4, "n": 2}, {"date": "2026-01-03", "profit": 0, "cum": 0.4, "n": 0}, {"date": "2026-01-04", "profit": 0, "cum": 0.4, "n": 0}, {"date": "2026-01-07", "profit": 0, "cum": 0.4, "n": 0}, {"date": "2026-01-08", "profit": 0, "cum": 0.4, "n": 0}, {"date": "2026-01-09", "profit": -2.0, "cum": -1.6, "n": 1}, {"date": "2026-01-10", "profit": 16.8, "cum": 15.2, "n": 1}, {"date": "2026-01-11", "profit": 2.4, "cum": 17.6, "n": 2}, {"date": "2026-01-15", "profit": 0, "cum": 17.6, "n": 0}, {"date": "2026-01-16", "profit": -2.0, "cum": 15.6, "n": 1}, {"date": "2026-01-17", "profit": -2.0, "cum": 13.6, "n": 1}, {"date": "2026-01-18", "profit": 0, "cum": 13.6, "n": 0}, {"date": "2026-01-19", "profit": 0, "cum": 13.6, "n": 0}, {"date": "2026-01-21", "profit": 0, "cum": 13.6, "n": 0}, {"date": "2026-01-22", "profit": 2.56, "cum": 16.16, "n": 1}, {"date": "2026-01-23", "profit": 0.0, "cum": 16.16, "n": 3}, {"date": "2026-01-24", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-01-25", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-01-28", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-01-30", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-01-31", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-02-01", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-02-04", "profit": 0, "cum": 16.16, "n": 0}, {"date": "2026-02-05", "profit": 4.6, "cum": 20.76, "n": 1}, {"date": "2026-02-06", "profit": 2.2, "cum": 22.96, "n": 1}, {"date": "2026-02-07", "profit": 0, "cum": 22.96, "n": 0}, {"date": "2026-02-08", "profit": 0, "cum": 22.96, "n": 0}, {"date": "2026-02-11", "profit": 32.96, "cum": 55.92, "n": 4}, {"date": "2026-02-12", "profit": -4.0, "cum": 51.92, "n": 1}, {"date": "2026-02-13", "profit": 0, "cum": 51.92, "n": 0}, {"date": "2026-02-14", "profit": 9.0, "cum": 60.92, "n": 1}, {"date": "2026-02-15", "profit": 16.2, "cum": 77.12, "n": 1}, {"date": "2026-02-17", "profit": 11.8, "cum": 88.92, "n": 1}, {"date": "2026-02-18", "profit": 0, "cum": 88.92, "n": 0}, {"date": "2026-02-19", "profit": 20.38, "cum": 109.3, "n": 1}, {"date": "2026-02-20", "profit": 15.0, "cum": 124.3, "n": 2}, {"date": "2026-02-21", "profit": 21.0, "cum": 145.3, "n": 2}, {"date": "2026-02-22", "profit": -2.0, "cum": 143.3, "n": 1}, {"date": "2026-02-26", "profit": 0, "cum": 143.3, "n": 0}, {"date": "2026-02-27", "profit": 12.0, "cum": 155.3, "n": 1}, {"date": "2026-02-28", "profit": 14.2, "cum": 169.5, "n": 2}]}, "rank_6_odds_under10": {"n": 11, "wins": 9, "shows": 0, "blanks": 2, "win_rate": 81.8, "show_rate": 81.8, "wagered": 44.0, "returned": 164.04, "net": 120.04, "roi": 272.8, "daily_pl": [{"date": "2026-01-01", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-02", "profit": -4.0, "cum": -4.0, "n": 1}, {"date": "2026-01-03", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-04", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-07", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-08", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-09", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-10", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-11", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-15", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-16", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-17", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-18", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-19", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-21", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-22", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-23", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-24", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-25", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-28", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-30", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-01-31", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-01", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-04", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-05", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-06", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-07", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-08", "profit": 0, "cum": -4.0, "n": 0}, {"date": "2026-02-11", "profit": 29.66, "cum": 25.66, "n": 2}, {"date": "2026-02-12", "profit": -4.0, "cum": 21.66, "n": 1}, {"date": "2026-02-13", "profit": 0, "cum": 21.66, "n": 0}, {"date": "2026-02-14", "profit": 0, "cum": 21.66, "n": 0}, {"date": "2026-02-15", "profit": 16.2, "cum": 37.86, "n": 1}, {"date": "2026-02-17", "profit": 11.8, "cum": 49.66, "n": 1}, {"date": "2026-02-18", "profit": 0, "cum": 49.66, "n": 0}, {"date": "2026-02-19", "profit": 20.38, "cum": 70.04, "n": 1}, {"date": "2026-02-20", "profit": 10.4, "cum": 80.44, "n": 1}, {"date": "2026-02-21", "profit": 11.4, "cum": 91.84, "n": 1}, {"date": "2026-02-22", "profit": 0, "cum": 91.84, "n": 0}, {"date": "2026-02-26", "profit": 0, "cum": 91.84, "n": 0}, {"date": "2026-02-27", "profit": 12.0, "cum": 103.84, "n": 1}, {"date": "2026-02-28", "profit": 16.2, "cum": 120.04, "n": 1}]}, "claiming_only": {"n": 141, "wins": 48, "shows": 41, "blanks": 52, "win_rate": 34.0, "show_rate": 63.1, "wagered": 508.0, "returned": 887.44, "net": 379.44, "roi": 74.7, "daily_pl": [{"date": "2026-01-01", "profit": -2.4, "cum": -2.4, "n": 4}, {"date": "2026-01-02", "profit": -9.54, "cum": -11.94, "n": 4}, {"date": "2026-01-03", "profit": 7.7, "cum": -4.24, "n": 4}, {"date": "2026-01-04", "profit": -8.0, "cum": -12.24, "n": 2}, {"date": "2026-01-07", "profit": 13.8, "cum": 1.56, "n": 4}, {"date": "2026-01-08", "profit": -1.8, "cum": -0.24, "n": 1}, {"date": "2026-01-09", "profit": 13.2, "cum": 12.96, "n": 5}, {"date": "2026-01-10", "profit": 16.8, "cum": 29.76, "n": 1}, {"date": "2026-01-11", "profit": -6.4, "cum": 23.36, "n": 5}, {"date": "2026-01-15", "profit": 9.4, "cum": 32.76, "n": 5}, {"date": "2026-01-16", "profit": -18.2, "cum": 14.56, "n": 7}, {"date": "2026-01-17", "profit": -8.0, "cum": 6.56, "n": 3}, {"date": "2026-01-18", "profit": 16.56, "cum": 23.12, "n": 5}, {"date": "2026-01-19", "profit": -6.0, "cum": 17.12, "n": 2}, {"date": "2026-01-21", "profit": -1.8, "cum": 15.32, "n": 2}, {"date": "2026-01-22", "profit": -8.38, "cum": 6.94, "n": 4}, {"date": "2026-01-23", "profit": -8.64, "cum": -1.7, "n": 7}, {"date": "2026-01-24", "profit": 4.4, "cum": 2.7, "n": 2}, {"date": "2026-01-25", "profit": -1.2, "cum": 1.5, "n": 2}, {"date": "2026-01-28", "profit": 11.8, "cum": 13.3, "n": 1}, {"date": "2026-01-30", "profit": 8.0, "cum": 21.3, "n": 1}, {"date": "2026-01-31", "profit": -4.0, "cum": 17.3, "n": 1}, {"date": "2026-02-01", "profit": 0, "cum": 17.3, "n": 0}, {"date": "2026-02-04", "profit": -2.92, "cum": 14.38, "n": 2}, {"date": "2026-02-05", "profit": -6.5, "cum": 7.88, "n": 6}, {"date": "2026-02-06", "profit": 3.6, "cum": 11.48, "n": 2}, {"date": "2026-02-07", "profit": 8.4, "cum": 19.88, "n": 1}, {"date": "2026-02-08", "profit": -1.6, "cum": 18.28, "n": 1}, {"date": "2026-02-11", "profit": 47.5, "cum": 65.78, "n": 6}, {"date": "2026-02-12", "profit": 37.4, "cum": 103.18, "n": 6}, {"date": "2026-02-13", "profit": 40.08, "cum": 143.26, "n": 5}, {"date": "2026-02-14", "profit": 56.48, "cum": 199.74, "n": 5}, {"date": "2026-02-15", "profit": 57.46, "cum": 257.2, "n": 6}, {"date": "2026-02-17", "profit": 0, "cum": 257.2, "n": 0}, {"date": "2026-02-18", "profit": 12.8, "cum": 270.0, "n": 3}, {"date": "2026-02-19", "profit": 20.38, "cum": 290.38, "n": 1}, {"date": "2026-02-20", "profit": 21.66, "cum": 312.04, "n": 4}, {"date": "2026-02-21", "profit": 54.4, "cum": 366.44, "n": 6}, {"date": "2026-02-22", "profit": 14.6, "cum": 381.04, "n": 3}, {"date": "2026-02-26", "profit": -6.0, "cum": 375.04, "n": 2}, {"date": "2026-02-27", "profit": 0.2, "cum": 375.24, "n": 5}, {"date": "2026-02-28", "profit": 4.2, "cum": 379.44, "n": 5}]}, "odds_5_8": {"n": 44, "wins": 20, "shows": 7, "blanks": 17, "win_rate": 45.5, "show_rate": 61.4, "wagered": 176.0, "returned": 402.04, "net": 226.04, "roi": 128.4, "daily_pl": [{"date": "2026-01-01", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-02", "profit": -7.54, "cum": -7.54, "n": 3}, {"date": "2026-01-03", "profit": 6.0, "cum": -1.54, "n": 1}, {"date": "2026-01-04", "profit": -4.0, "cum": -5.54, "n": 1}, {"date": "2026-01-07", "profit": 0, "cum": -5.54, "n": 0}, {"date": "2026-01-08", "profit": 0, "cum": -5.54, "n": 0}, {"date": "2026-01-09", "profit": -4.0, "cum": -9.54, "n": 1}, {"date": "2026-01-10", "profit": 0, "cum": -9.54, "n": 0}, {"date": "2026-01-11", "profit": 0, "cum": -9.54, "n": 0}, {"date": "2026-01-15", "profit": 1.0, "cum": -8.54, "n": 1}, {"date": "2026-01-16", "profit": 0, "cum": -8.54, "n": 0}, {"date": "2026-01-17", "profit": 0, "cum": -8.54, "n": 0}, {"date": "2026-01-18", "profit": 18.0, "cum": 9.46, "n": 1}, {"date": "2026-01-19", "profit": 0, "cum": 9.46, "n": 0}, {"date": "2026-01-21", "profit": 0, "cum": 9.46, "n": 0}, {"date": "2026-01-22", "profit": -4.0, "cum": 5.46, "n": 1}, {"date": "2026-01-23", "profit": 0, "cum": 5.46, "n": 0}, {"date": "2026-01-24", "profit": 13.8, "cum": 19.26, "n": 1}, {"date": "2026-01-25", "profit": -1.2, "cum": 18.06, "n": 2}, {"date": "2026-01-28", "profit": 11.8, "cum": 29.86, "n": 1}, {"date": "2026-01-30", "profit": 0, "cum": 29.86, "n": 0}, {"date": "2026-01-31", "profit": 11.6, "cum": 41.46, "n": 2}, {"date": "2026-02-01", "profit": 0, "cum": 41.46, "n": 0}, {"date": "2026-02-04", "profit": -4.0, "cum": 37.46, "n": 1}, {"date": "2026-02-05", "profit": -13.6, "cum": 23.86, "n": 4}, {"date": "2026-02-06", "profit": 14.92, "cum": 38.78, "n": 1}, {"date": "2026-02-07", "profit": 0, "cum": 38.78, "n": 0}, {"date": "2026-02-08", "profit": 0, "cum": 38.78, "n": 0}, {"date": "2026-02-11", "profit": 38.3, "cum": 77.08, "n": 4}, {"date": "2026-02-12", "profit": 29.4, "cum": 106.48, "n": 2}, {"date": "2026-02-13", "profit": 11.88, "cum": 118.36, "n": 2}, {"date": "2026-02-14", "profit": 41.2, "cum": 159.56, "n": 3}, {"date": "2026-02-15", "profit": 33.52, "cum": 193.08, "n": 2}, {"date": "2026-02-17", "profit": 11.8, "cum": 204.88, "n": 1}, {"date": "2026-02-18", "profit": 0, "cum": 204.88, "n": 0}, {"date": "2026-02-19", "profit": 0, "cum": 204.88, "n": 0}, {"date": "2026-02-20", "profit": 0, "cum": 204.88, "n": 0}, {"date": "2026-02-21", "profit": 28.96, "cum": 233.84, "n": 2}, {"date": "2026-02-22", "profit": -4.0, "cum": 229.84, "n": 1}, {"date": "2026-02-26", "profit": -8.0, "cum": 221.84, "n": 2}, {"date": "2026-02-27", "profit": -4.0, "cum": 217.84, "n": 1}, {"date": "2026-02-28", "profit": 8.2, "cum": 226.04, "n": 3}]}, "v7_wed_sat": {"n": 31, "wins": 19, "shows": 5, "blanks": 7, "win_rate": 61.3, "show_rate": 77.4, "wagered": 110.0, "returned": 276.36, "net": 166.36, "roi": 151.2, "daily_pl": [{"date": "2026-01-01", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-02", "profit": 0, "cum": 0.0, "n": 0}, {"date": "2026-01-03", "profit": 6.0, "cum": 6.0, "n": 1}, {"date": "2026-01-04", "profit": 0, "cum": 6.0, "n": 0}, {"date": "2026-01-07", "profit": 0, "cum": 6.0, "n": 0}, {"date": "2026-01-08", "profit": 0, "cum": 6.0, "n": 0}, {"date": "2026-01-09", "profit": 0, "cum": 6.0, "n": 0}, {"date": "2026-01-10", "profit": 1.8, "cum": 7.8, "n": 1}, {"date": "2026-01-11", "profit": 0, "cum": 7.8, "n": 0}, {"date": "2026-01-15", "profit": 0, "cum": 7.8, "n": 0}, {"date": "2026-01-16", "profit": 0, "cum": 7.8, "n": 0}, {"date": "2026-01-17", "profit": -3.0, "cum": 4.8, "n": 3}, {"date": "2026-01-18", "profit": 0, "cum": 4.8, "n": 0}, {"date": "2026-01-19", "profit": 0, "cum": 4.8, "n": 0}, {"date": "2026-01-21", "profit": -7.8, "cum": -3.0, "n": 3}, {"date": "2026-01-22", "profit": 0, "cum": -3.0, "n": 0}, {"date": "2026-01-23", "profit": 0, "cum": -3.0, "n": 0}, {"date": "2026-01-24", "profit": 18.2, "cum": 15.2, "n": 3}, {"date": "2026-01-25", "profit": 0, "cum": 15.2, "n": 0}, {"date": "2026-01-28", "profit": 0, "cum": 15.2, "n": 0}, {"date": "2026-01-30", "profit": 0, "cum": 15.2, "n": 0}, {"date": "2026-01-31", "profit": 15.6, "cum": 30.8, "n": 1}, {"date": "2026-02-01", "profit": 0, "cum": 30.8, "n": 0}, {"date": "2026-02-04", "profit": 3.32, "cum": 34.12, "n": 2}, {"date": "2026-02-05", "profit": 0, "cum": 34.12, "n": 0}, {"date": "2026-02-06", "profit": 0, "cum": 34.12, "n": 0}, {"date": "2026-02-07", "profit": -2.0, "cum": 32.12, "n": 2}, {"date": "2026-02-08", "profit": 0, "cum": 32.12, "n": 0}, {"date": "2026-02-11", "profit": 46.36, "cum": 78.48, "n": 6}, {"date": "2026-02-12", "profit": 0, "cum": 78.48, "n": 0}, {"date": "2026-02-13", "profit": 0, "cum": 78.48, "n": 0}, {"date": "2026-02-14", "profit": 57.08, "cum": 135.56, "n": 5}, {"date": "2026-02-15", "profit": 0, "cum": 135.56, "n": 0}, {"date": "2026-02-17", "profit": 0, "cum": 135.56, "n": 0}, {"date": "2026-02-18", "profit": 22.0, "cum": 157.56, "n": 3}, {"date": "2026-02-19", "profit": 0, "cum": 157.56, "n": 0}, {"date": "2026-02-20", "profit": 0, "cum": 157.56, "n": 0}, {"date": "2026-02-21", "profit": 8.8, "cum": 166.36, "n": 1}, {"date": "2026-02-22", "profit": 0, "cum": 166.36, "n": 0}, {"date": "2026-02-26", "profit": 0, "cum": 166.36, "n": 0}, {"date": "2026-02-27", "profit": 0, "cum": 166.36, "n": 0}, {"date": "2026-02-28", "profit": 0, "cum": 166.36, "n": 0}]}}, "factors": {"odds_buckets": [{"label": "3/1\u20135/1", "n": 99, "win_rate": 35.4, "roi": 47.0}, {"label": "5/1\u20138/1", "n": 44, "win_rate": 45.5, "roi": 128.4}, {"label": "8/1\u201312/1", "n": 28, "win_rate": 17.9, "roi": 35.5}, {"label": "12/1\u201320/1", "n": 22, "win_rate": 27.3, "roi": 29.5}, {"label": "20/1+", "n": 13, "win_rate": 23.1, "roi": 160.0}], "fig_buckets": [{"label": "80\u201389", "n": 7, "win_rate": 14.3, "roi": -2.3}, {"label": "90\u201399", "n": 39, "win_rate": 28.2, "roi": 52.1}, {"label": "100\u2013109", "n": 72, "win_rate": 37.5, "roi": 94.8}, {"label": "110+", "n": 86, "win_rate": 34.9, "roi": 60.4}], "gap_buckets": [{"label": "5\u20137pt", "n": 94, "win_rate": 30.9, "roi": 64.5}, {"label": "8\u201311pt", "n": 57, "win_rate": 42.1, "roi": 102.0}, {"label": "12\u201319pt", "n": 38, "win_rate": 31.6, "roi": 25.9}, {"label": "20pt+", "n": 17, "win_rate": 23.5, "roi": 73.6}], "field_size": [{"label": "2\u20134", "n": 22, "win_rate": 27.3, "roi": 24.1}, {"label": "5\u20136", "n": 73, "win_rate": 37.0, "roi": 65.5}, {"label": "7\u20138", "n": 75, "win_rate": 36.0, "roi": 81.3}, {"label": "9+", "n": 36, "win_rate": 25.0, "roi": 74.0}], "dow": [{"label": "Mon", "n": 3, "win_rate": 0.0, "roi": -74.0}, {"label": "Tue", "n": 1, "win_rate": 100.0, "roi": 295.0}, {"label": "Wed", "n": 26, "win_rate": 46.2, "roi": 117.8}, {"label": "Thu", "n": 43, "win_rate": 18.6, "roi": 26.9}, {"label": "Fri", "n": 55, "win_rate": 27.3, "roi": 43.1}, {"label": "Sat", "n": 48, "win_rate": 47.9, "roi": 120.0}, {"label": "Sun", "n": 30, "win_rate": 33.3, "roi": 64.4}], "ml_rank": [{"label": "ML Fav", "n": 22, "win_rate": 36.4, "roi": 60.0}, {"label": "2nd", "n": 54, "win_rate": 33.3, "roi": 56.8}, {"label": "3rd", "n": 43, "win_rate": 34.9, "roi": 49.7}, {"label": "4th-5th", "n": 56, "win_rate": 25.0, "roi": 40.7}, {"label": "6th+", "n": 31, "win_rate": 45.2, "roi": 201.8}], "race_type": [{"label": "Claiming", "n": 141, "win_rate": 34.0, "roi": 74.7}, {"label": "AOC", "n": 32, "win_rate": 40.6, "roi": 61.0}, {"label": "Allow.", "n": 33, "win_rate": 24.2, "roi": 46.4}], "track": [{"label": "AQU", "n": 45, "win_rate": 40.0, "roi": 80.5}, {"label": "CT", "n": 37, "win_rate": 18.9, "roi": 33.0}, {"label": "FG", "n": 24, "win_rate": 33.3, "roi": 57.3}, {"label": "GP", "n": 11, "win_rate": 36.4, "roi": 86.0}, {"label": "LAU", "n": 28, "win_rate": 32.1, "roi": 64.3}, {"label": "OAK", "n": 15, "win_rate": 46.7, "roi": 107.2}, {"label": "SA", "n": 14, "win_rate": 28.6, "roi": 24.0}, {"label": "TBD", "n": 30, "win_rate": 36.7, "roi": 100.0}]}};
+// ── DATA ─────────────────────────────────────────────────────────────────────
+</script>
+<script id="dataScript">
+const D = {"meta":{"dates":["2026-01-01","2026-01-02","2026-01-03","2026-01-04","2026-01-07","2026-01-08","2026-01-09","2026-01-10","2026-01-11","2026-01-15","2026-01-16","2026-01-17","2026-01-18","2026-01-19","2026-01-21","2026-01-22","2026-01-23","2026-01-24","2026-01-25","2026-01-28","2026-01-30","2026-01-31","2026-02-01","2026-02-04","2026-02-05","2026-02-06","2026-02-07","2026-02-08","2026-02-11","2026-02-12","2026-02-13","2026-02-14","2026-02-15","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-21","2026-02-22","2026-02-26","2026-02-27","2026-02-28"],"total_bets":206,"total_days":42,"date_range":"2026-01-01 \u2192 2026-02-28","hot_streak":{"start":"2026-02-11","end":"2026-02-21"}},"overall":{"n":206,"wins":69,"shows":63,"blanks":74,"win_rate":33.5,"show_rate":64.1,"wagered":732.0,"returned":1230.82,"net":498.82,"roi":68.1,"roi_hot":195.0,"roi_cold":12.2,"n_hot":61,"n_cold":145},"daily_v1":[{"date":"2026-01-01","profit":-7.06,"cum":-7.06,"n":6,"wins":0,"shows":4,"blanks":2},{"date":"2026-01-02","profit":-5.38,"cum":-12.44,"n":7,"wins":0,"shows":4,"blanks":3},{"date":"2026-01-03","profit":5.7,"cum":-6.74,"n":5,"wins":1,"shows":1,"blanks":3},{"date":"2026-01-04","profit":-10.0,"cum":-16.74,"n":3,"wins":0,"shows":0,"blanks":3},{"date":"2026-01-07","profit":15.4,"cum":-1.34,"n":5,"wins":1,"shows":3,"blanks":1},{"date":"2026-01-08","profit":-5.2,"cum":-6.54,"n":4,"wins":0,"shows":4,"blanks":0},{"date":"2026-01-09","profit":7.1,"cum":0.56,"n":8,"wins":1,"shows":2,"blanks":5},{"date":"2026-01-10","profit":14.6,"cum":15.16,"n":3,"wins":1,"shows":1,"blanks":1},{"date":"2026-01-11","profit":-8.2,"cum":6.96,"n":6,"wins":0,"shows":3,"blanks":3},{"date":"2026-01-15","profit":22.6,"cum":29.56,"n":6,"wins":2,"shows":3,"blanks":1},{"date":"2026-01-16","profit":-19.44,"cum":10.12,"n":8,"wins":0,"shows":4,"blanks":4},{"date":"2026-01-17","profit":-9.68,"cum":0.44,"n":6,"wins":0,"shows":2,"blanks":4},{"date":"2026-01-18","profit":14.56,"cum":15.0,"n":6,"wins":2,"shows":1,"blanks":3},{"date":"2026-01-19","profit":-7.4,"cum":7.6,"n":3,"wins":0,"shows":1,"blanks":2},{"date":"2026-01-21","profit":-9.8,"cum":-2.2,"n":4,"wins":0,"shows":1,"blanks":3},{"date":"2026-01-22","profit":-7.22,"cum":-9.42,"n":6,"wins":0,"shows":5,"blanks":1},{"date":"2026-01-23","profit":-4.64,"cum":-14.06,"n":8,"wins":1,"shows":2,"blanks":5},{"date":"2026-01-24","profit":25.4,"cum":11.34,"n":4,"wins":3,"shows":1,"blanks":0},{"date":"2026-01-25","profit":-1.2,"cum":10.14,"n":2,"wins":0,"shows":2,"blanks":0},{"date":"2026-01-28","profit":11.8,"cum":21.94,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-30","profit":8.0,"cum":29.94,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-31","profit":11.6,"cum":41.54,"n":2,"wins":1,"shows":0,"blanks":1},{"date":"2026-02-01","profit":-2.0,"cum":39.54,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-02-04","profit":4.4,"cum":43.94,"n":3,"wins":1,"shows":1,"blanks":1},{"date":"2026-02-05","profit":-2.18,"cum":41.76,"n":10,"wins":1,"shows":6,"blanks":3},{"date":"2026-02-06","profit":18.52,"cum":60.28,"n":3,"wins":2,"shows":1,"blanks":0},{"date":"2026-02-07","profit":6.4,"cum":66.68,"n":3,"wins":2,"shows":0,"blanks":1},{"date":"2026-02-08","profit":-1.6,"cum":65.08,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-02-11","profit":60.86,"cum":125.94,"n":9,"wins":6,"shows":1,"blanks":2},{"date":"2026-02-12","profit":33.4,"cum":159.34,"n":7,"wins":4,"shows":0,"blanks":3},{"date":"2026-02-13","profit":36.08,"cum":195.42,"n":6,"wins":3,"shows":2,"blanks":1},{"date":"2026-02-14","profit":72.68,"cum":268.1,"n":8,"wins":7,"shows":0,"blanks":1},{"date":"2026-02-15","profit":67.36,"cum":335.46,"n":7,"wins":6,"shows":1,"blanks":0},{"date":"2026-02-17","profit":11.8,"cum":347.26,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-18","profit":23.4,"cum":370.66,"n":4,"wins":3,"shows":1,"blanks":0},{"date":"2026-02-19","profit":20.38,"cum":391.04,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-20","profit":44.1,"cum":435.14,"n":9,"wins":6,"shows":2,"blanks":1},{"date":"2026-02-21","profit":66.68,"cum":501.82,"n":9,"wins":7,"shows":1,"blanks":1},{"date":"2026-02-22","profit":10.6,"cum":512.42,"n":4,"wins":2,"shows":0,"blanks":2},{"date":"2026-02-26","profit":-10.0,"cum":502.42,"n":3,"wins":0,"shows":0,"blanks":3},{"date":"2026-02-27","profit":0.2,"cum":502.62,"n":5,"wins":1,"shows":2,"blanks":2},{"date":"2026-02-28","profit":-3.8,"cum":498.82,"n":8,"wins":1,"shows":0,"blanks":7}],"strategies":{"v1_baseline":{"n":206,"wins":69,"shows":63,"blanks":74,"win_rate":33.5,"show_rate":64.1,"wagered":732.0,"returned":1230.82,"net":498.82,"roi":68.1,"color":"#c9a84c","name":"V1 Baseline","desc":"Full ruleset, no extra filters","roi_hot":195.0,"roi_cold":12.2,"n_hot":61,"n_cold":145,"daily_pl":[{"date":"2026-01-01","profit":-7.06,"cum":-7.06,"n":6,"wins":0,"shows":4,"blanks":2},{"date":"2026-01-02","profit":-5.38,"cum":-12.44,"n":7,"wins":0,"shows":4,"blanks":3},{"date":"2026-01-03","profit":5.7,"cum":-6.74,"n":5,"wins":1,"shows":1,"blanks":3},{"date":"2026-01-04","profit":-10.0,"cum":-16.74,"n":3,"wins":0,"shows":0,"blanks":3},{"date":"2026-01-07","profit":15.4,"cum":-1.34,"n":5,"wins":1,"shows":3,"blanks":1},{"date":"2026-01-08","profit":-5.2,"cum":-6.54,"n":4,"wins":0,"shows":4,"blanks":0},{"date":"2026-01-09","profit":7.1,"cum":0.56,"n":8,"wins":1,"shows":2,"blanks":5},{"date":"2026-01-10","profit":14.6,"cum":15.16,"n":3,"wins":1,"shows":1,"blanks":1},{"date":"2026-01-11","profit":-8.2,"cum":6.96,"n":6,"wins":0,"shows":3,"blanks":3},{"date":"2026-01-15","profit":22.6,"cum":29.56,"n":6,"wins":2,"shows":3,"blanks":1},{"date":"2026-01-16","profit":-19.44,"cum":10.12,"n":8,"wins":0,"shows":4,"blanks":4},{"date":"2026-01-17","profit":-9.68,"cum":0.44,"n":6,"wins":0,"shows":2,"blanks":4},{"date":"2026-01-18","profit":14.56,"cum":15.0,"n":6,"wins":2,"shows":1,"blanks":3},{"date":"2026-01-19","profit":-7.4,"cum":7.6,"n":3,"wins":0,"shows":1,"blanks":2},{"date":"2026-01-21","profit":-9.8,"cum":-2.2,"n":4,"wins":0,"shows":1,"blanks":3},{"date":"2026-01-22","profit":-7.22,"cum":-9.42,"n":6,"wins":0,"shows":5,"blanks":1},{"date":"2026-01-23","profit":-4.64,"cum":-14.06,"n":8,"wins":1,"shows":2,"blanks":5},{"date":"2026-01-24","profit":25.4,"cum":11.34,"n":4,"wins":3,"shows":1,"blanks":0},{"date":"2026-01-25","profit":-1.2,"cum":10.14,"n":2,"wins":0,"shows":2,"blanks":0},{"date":"2026-01-28","profit":11.8,"cum":21.94,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-30","profit":8.0,"cum":29.94,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-31","profit":11.6,"cum":41.54,"n":2,"wins":1,"shows":0,"blanks":1},{"date":"2026-02-01","profit":-2.0,"cum":39.54,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-02-04","profit":4.4,"cum":43.94,"n":3,"wins":1,"shows":1,"blanks":1},{"date":"2026-02-05","profit":-2.18,"cum":41.76,"n":10,"wins":1,"shows":6,"blanks":3},{"date":"2026-02-06","profit":18.52,"cum":60.28,"n":3,"wins":2,"shows":1,"blanks":0},{"date":"2026-02-07","profit":6.4,"cum":66.68,"n":3,"wins":2,"shows":0,"blanks":1},{"date":"2026-02-08","profit":-1.6,"cum":65.08,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-02-11","profit":60.86,"cum":125.94,"n":9,"wins":6,"shows":1,"blanks":2},{"date":"2026-02-12","profit":33.4,"cum":159.34,"n":7,"wins":4,"shows":0,"blanks":3},{"date":"2026-02-13","profit":36.08,"cum":195.42,"n":6,"wins":3,"shows":2,"blanks":1},{"date":"2026-02-14","profit":72.68,"cum":268.1,"n":8,"wins":7,"shows":0,"blanks":1},{"date":"2026-02-15","profit":67.36,"cum":335.46,"n":7,"wins":6,"shows":1,"blanks":0},{"date":"2026-02-17","profit":11.8,"cum":347.26,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-18","profit":23.4,"cum":370.66,"n":4,"wins":3,"shows":1,"blanks":0},{"date":"2026-02-19","profit":20.38,"cum":391.04,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-20","profit":44.1,"cum":435.14,"n":9,"wins":6,"shows":2,"blanks":1},{"date":"2026-02-21","profit":66.68,"cum":501.82,"n":9,"wins":7,"shows":1,"blanks":1},{"date":"2026-02-22","profit":10.6,"cum":512.42,"n":4,"wins":2,"shows":0,"blanks":2},{"date":"2026-02-26","profit":-10.0,"cum":502.42,"n":3,"wins":0,"shows":0,"blanks":3},{"date":"2026-02-27","profit":0.2,"cum":502.62,"n":5,"wins":1,"shows":2,"blanks":2},{"date":"2026-02-28","profit":-3.8,"cum":498.82,"n":8,"wins":1,"shows":0,"blanks":7}]},"v7_refined":{"n":89,"wins":35,"shows":26,"blanks":28,"win_rate":39.3,"show_rate":68.5,"wagered":324.0,"returned":564.8,"net":240.8,"roi":74.3,"color":"#5b9cf6","name":"V7 Refined","desc":"Fig\u226590 \u00b7 Gap\u22658pt \u00b7 Skip 8\u201312/1","roi_hot":192.1,"roi_cold":17.1,"n_hot":28,"n_cold":61,"daily_pl":[{"date":"2026-01-01","profit":-4.66,"cum":-4.66,"n":2,"wins":0,"shows":1,"blanks":1},{"date":"2026-01-02","profit":-1.44,"cum":-6.1,"n":4,"wins":0,"shows":2,"blanks":2},{"date":"2026-01-03","profit":6.0,"cum":-0.1,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-01-04","profit":0,"cum":-0.1,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-07","profit":0,"cum":-0.1,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-08","profit":-0.4,"cum":-0.5,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-01-09","profit":-6.1,"cum":-6.6,"n":3,"wins":0,"shows":1,"blanks":2},{"date":"2026-01-10","profit":1.8,"cum":-4.8,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-11","profit":-1.6,"cum":-6.4,"n":3,"wins":0,"shows":1,"blanks":2},{"date":"2026-01-15","profit":13.0,"cum":6.6,"n":3,"wins":1,"shows":2,"blanks":0},{"date":"2026-01-16","profit":-5.4,"cum":1.2,"n":2,"wins":0,"shows":1,"blanks":1},{"date":"2026-01-17","profit":-3.0,"cum":-1.8,"n":3,"wins":0,"shows":1,"blanks":2},{"date":"2026-01-18","profit":19.36,"cum":17.56,"n":4,"wins":2,"shows":0,"blanks":2},{"date":"2026-01-19","profit":-4.0,"cum":13.56,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-01-21","profit":-7.8,"cum":5.76,"n":3,"wins":0,"shows":1,"blanks":2},{"date":"2026-01-22","profit":-5.8,"cum":-0.04,"n":2,"wins":0,"shows":1,"blanks":1},{"date":"2026-01-23","profit":-7.4,"cum":-7.44,"n":3,"wins":0,"shows":1,"blanks":2},{"date":"2026-01-24","profit":18.2,"cum":10.76,"n":3,"wins":2,"shows":1,"blanks":0},{"date":"2026-01-25","profit":-1.2,"cum":9.56,"n":2,"wins":0,"shows":2,"blanks":0},{"date":"2026-01-28","profit":0,"cum":9.56,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-30","profit":0,"cum":9.56,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-31","profit":15.6,"cum":25.16,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-01","profit":0,"cum":25.16,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-04","profit":3.32,"cum":28.48,"n":2,"wins":1,"shows":0,"blanks":1},{"date":"2026-02-05","profit":-5.38,"cum":23.1,"n":6,"wins":1,"shows":3,"blanks":2},{"date":"2026-02-06","profit":14.92,"cum":38.02,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-07","profit":-2.0,"cum":36.02,"n":2,"wins":1,"shows":0,"blanks":1},{"date":"2026-02-08","profit":-1.6,"cum":34.42,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-02-11","profit":46.36,"cum":80.78,"n":6,"wins":4,"shows":1,"blanks":1},{"date":"2026-02-12","profit":20.2,"cum":100.98,"n":2,"wins":2,"shows":0,"blanks":0},{"date":"2026-02-13","profit":2.4,"cum":103.38,"n":3,"wins":1,"shows":1,"blanks":1},{"date":"2026-02-14","profit":57.08,"cum":160.46,"n":5,"wins":5,"shows":0,"blanks":0},{"date":"2026-02-15","profit":19.7,"cum":180.16,"n":2,"wins":2,"shows":0,"blanks":0},{"date":"2026-02-17","profit":0,"cum":180.16,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-18","profit":22.0,"cum":202.16,"n":3,"wins":3,"shows":0,"blanks":0},{"date":"2026-02-19","profit":0,"cum":202.16,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-20","profit":27.04,"cum":229.2,"n":6,"wins":4,"shows":1,"blanks":1},{"date":"2026-02-21","profit":8.8,"cum":238.0,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-22","profit":10.6,"cum":248.6,"n":4,"wins":2,"shows":0,"blanks":2},{"date":"2026-02-26","profit":0,"cum":248.6,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-27","profit":-7.8,"cum":240.8,"n":3,"wins":0,"shows":2,"blanks":1},{"date":"2026-02-28","profit":0,"cum":240.8,"n":0,"wins":0,"shows":0,"blanks":0}]},"wed_sat":{"n":74,"wins":35,"shows":13,"blanks":26,"win_rate":47.3,"show_rate":64.9,"wagered":248.0,"returned":543.64,"net":295.64,"roi":119.2,"color":"#e8c870","name":"Wed + Sat","desc":"Major cards only","roi_hot":219.2,"roi_cold":49.3,"n_hot":30,"n_cold":44,"daily_pl":[{"date":"2026-01-01","profit":0,"cum":0.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-02","profit":0,"cum":0.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-03","profit":5.7,"cum":5.7,"n":5,"wins":1,"shows":1,"blanks":3},{"date":"2026-01-04","profit":0,"cum":5.7,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-07","profit":15.4,"cum":21.1,"n":5,"wins":1,"shows":3,"blanks":1},{"date":"2026-01-08","profit":0,"cum":21.1,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-09","profit":0,"cum":21.1,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-10","profit":14.6,"cum":35.7,"n":3,"wins":1,"shows":1,"blanks":1},{"date":"2026-01-11","profit":0,"cum":35.7,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-15","profit":0,"cum":35.7,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-16","profit":0,"cum":35.7,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-17","profit":-9.68,"cum":26.02,"n":6,"wins":0,"shows":2,"blanks":4},{"date":"2026-01-18","profit":0,"cum":26.02,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-19","profit":0,"cum":26.02,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-21","profit":-9.8,"cum":16.22,"n":4,"wins":0,"shows":1,"blanks":3},{"date":"2026-01-22","profit":0,"cum":16.22,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-23","profit":0,"cum":16.22,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-24","profit":25.4,"cum":41.62,"n":4,"wins":3,"shows":1,"blanks":0},{"date":"2026-01-25","profit":0,"cum":41.62,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-28","profit":11.8,"cum":53.42,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-30","profit":0,"cum":53.42,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-31","profit":11.6,"cum":65.02,"n":2,"wins":1,"shows":0,"blanks":1},{"date":"2026-02-01","profit":0,"cum":65.02,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-04","profit":4.4,"cum":69.42,"n":3,"wins":1,"shows":1,"blanks":1},{"date":"2026-02-05","profit":0,"cum":69.42,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-06","profit":0,"cum":69.42,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-07","profit":6.4,"cum":75.82,"n":3,"wins":2,"shows":0,"blanks":1},{"date":"2026-02-08","profit":0,"cum":75.82,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-11","profit":60.86,"cum":136.68,"n":9,"wins":6,"shows":1,"blanks":2},{"date":"2026-02-12","profit":0,"cum":136.68,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-13","profit":0,"cum":136.68,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-14","profit":72.68,"cum":209.36,"n":8,"wins":7,"shows":0,"blanks":1},{"date":"2026-02-15","profit":0,"cum":209.36,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-17","profit":0,"cum":209.36,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-18","profit":23.4,"cum":232.76,"n":4,"wins":3,"shows":1,"blanks":0},{"date":"2026-02-19","profit":0,"cum":232.76,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-20","profit":0,"cum":232.76,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-21","profit":66.68,"cum":299.44,"n":9,"wins":7,"shows":1,"blanks":1},{"date":"2026-02-22","profit":0,"cum":299.44,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-26","profit":0,"cum":299.44,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-27","profit":0,"cum":299.44,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-28","profit":-3.8,"cum":295.64,"n":8,"wins":1,"shows":0,"blanks":7}]},"rank_6plus":{"n":31,"wins":14,"shows":6,"blanks":11,"win_rate":45.2,"show_rate":64.5,"wagered":84.0,"returned":253.5,"net":169.5,"roi":201.8,"color":"#3ddc97","name":"Rank 6+ Divergence","desc":"Market has written it off","roi_hot":291.3,"roi_cold":112.3,"n_hot":13,"n_cold":18,"daily_pl":[{"date":"2026-01-01","profit":0,"cum":0.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-02","profit":0.4,"cum":0.4,"n":2,"wins":0,"shows":1,"blanks":1},{"date":"2026-01-03","profit":0,"cum":0.4,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-04","profit":0,"cum":0.4,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-07","profit":0,"cum":0.4,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-08","profit":0,"cum":0.4,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-09","profit":-2.0,"cum":-1.6,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-01-10","profit":16.8,"cum":15.2,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-01-11","profit":2.4,"cum":17.6,"n":2,"wins":0,"shows":1,"blanks":1},{"date":"2026-01-15","profit":0,"cum":17.6,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-16","profit":-2.0,"cum":15.6,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-01-17","profit":-2.0,"cum":13.6,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-01-18","profit":0,"cum":13.6,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-19","profit":0,"cum":13.6,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-21","profit":0,"cum":13.6,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-22","profit":2.56,"cum":16.16,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-01-23","profit":0.0,"cum":16.16,"n":3,"wins":0,"shows":1,"blanks":2},{"date":"2026-01-24","profit":0,"cum":16.16,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-25","profit":0,"cum":16.16,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-28","profit":0,"cum":16.16,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-30","profit":0,"cum":16.16,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-31","profit":0,"cum":16.16,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-01","profit":0,"cum":16.16,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-04","profit":0,"cum":16.16,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-05","profit":4.6,"cum":20.76,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-02-06","profit":2.2,"cum":22.96,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-07","profit":0,"cum":22.96,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-08","profit":0,"cum":22.96,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-11","profit":32.96,"cum":55.92,"n":4,"wins":3,"shows":0,"blanks":1},{"date":"2026-02-12","profit":-4.0,"cum":51.92,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-02-13","profit":0,"cum":51.92,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-14","profit":9.0,"cum":60.92,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-15","profit":16.2,"cum":77.12,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-17","profit":11.8,"cum":88.92,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-18","profit":0,"cum":88.92,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-19","profit":20.38,"cum":109.3,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-20","profit":15.0,"cum":124.3,"n":2,"wins":2,"shows":0,"blanks":0},{"date":"2026-02-21","profit":21.0,"cum":145.3,"n":2,"wins":2,"shows":0,"blanks":0},{"date":"2026-02-22","profit":-2.0,"cum":143.3,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-02-26","profit":0,"cum":143.3,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-27","profit":12.0,"cum":155.3,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-28","profit":14.2,"cum":169.5,"n":2,"wins":1,"shows":0,"blanks":1}]},"rank_6_u10":{"n":11,"wins":9,"shows":0,"blanks":2,"win_rate":81.8,"show_rate":81.8,"wagered":44.0,"returned":164.04,"net":120.04,"roi":272.8,"color":"#34d399","name":"Rank 6+ Under 10/1","desc":"Ignored + reasonable price","roi_hot":299.5,"roi_cold":201.7,"n_hot":8,"n_cold":3,"daily_pl":[{"date":"2026-01-01","profit":0,"cum":0.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-02","profit":-4.0,"cum":-4.0,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-01-03","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-04","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-07","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-08","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-09","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-10","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-11","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-15","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-16","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-17","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-18","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-19","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-21","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-22","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-23","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-24","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-25","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-28","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-30","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-31","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-01","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-04","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-05","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-06","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-07","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-08","profit":0,"cum":-4.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-11","profit":29.66,"cum":25.66,"n":2,"wins":2,"shows":0,"blanks":0},{"date":"2026-02-12","profit":-4.0,"cum":21.66,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-02-13","profit":0,"cum":21.66,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-14","profit":0,"cum":21.66,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-15","profit":16.2,"cum":37.86,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-17","profit":11.8,"cum":49.66,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-18","profit":0,"cum":49.66,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-19","profit":20.38,"cum":70.04,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-20","profit":10.4,"cum":80.44,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-21","profit":11.4,"cum":91.84,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-22","profit":0,"cum":91.84,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-26","profit":0,"cum":91.84,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-27","profit":12.0,"cum":103.84,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-28","profit":16.2,"cum":120.04,"n":1,"wins":1,"shows":0,"blanks":0}]},"claiming_only":{"n":141,"wins":48,"shows":41,"blanks":52,"win_rate":34.0,"show_rate":63.1,"wagered":508.0,"returned":887.44,"net":379.44,"roi":74.7,"color":"#a78bfa","name":"Claiming Only","desc":"Claiming races exclusively","roi_hot":226.1,"roi_cold":8.8,"n_hot":42,"n_cold":99,"daily_pl":[{"date":"2026-01-01","profit":-2.4,"cum":-2.4,"n":4,"wins":0,"shows":3,"blanks":1},{"date":"2026-01-02","profit":-9.54,"cum":-11.94,"n":4,"wins":0,"shows":1,"blanks":3},{"date":"2026-01-03","profit":7.7,"cum":-4.24,"n":4,"wins":1,"shows":1,"blanks":2},{"date":"2026-01-04","profit":-8.0,"cum":-12.24,"n":2,"wins":0,"shows":0,"blanks":2},{"date":"2026-01-07","profit":13.8,"cum":1.56,"n":4,"wins":1,"shows":2,"blanks":1},{"date":"2026-01-08","profit":-1.8,"cum":-0.24,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-01-09","profit":13.2,"cum":12.96,"n":5,"wins":1,"shows":1,"blanks":3},{"date":"2026-01-10","profit":16.8,"cum":29.76,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-01-11","profit":-6.4,"cum":23.36,"n":5,"wins":0,"shows":2,"blanks":3},{"date":"2026-01-15","profit":9.4,"cum":32.76,"n":5,"wins":1,"shows":3,"blanks":1},{"date":"2026-01-16","profit":-18.2,"cum":14.56,"n":7,"wins":0,"shows":3,"blanks":4},{"date":"2026-01-17","profit":-8.0,"cum":6.56,"n":3,"wins":0,"shows":0,"blanks":3},{"date":"2026-01-18","profit":16.56,"cum":23.12,"n":5,"wins":2,"shows":1,"blanks":2},{"date":"2026-01-19","profit":-6.0,"cum":17.12,"n":2,"wins":0,"shows":0,"blanks":2},{"date":"2026-01-21","profit":-1.8,"cum":15.32,"n":2,"wins":0,"shows":1,"blanks":1},{"date":"2026-01-22","profit":-8.38,"cum":6.94,"n":4,"wins":0,"shows":3,"blanks":1},{"date":"2026-01-23","profit":-8.64,"cum":-1.7,"n":7,"wins":1,"shows":1,"blanks":5},{"date":"2026-01-24","profit":4.4,"cum":2.7,"n":2,"wins":1,"shows":1,"blanks":0},{"date":"2026-01-25","profit":-1.2,"cum":1.5,"n":2,"wins":0,"shows":2,"blanks":0},{"date":"2026-01-28","profit":11.8,"cum":13.3,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-30","profit":8.0,"cum":21.3,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-31","profit":-4.0,"cum":17.3,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-02-01","profit":0,"cum":17.3,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-04","profit":-2.92,"cum":14.38,"n":2,"wins":0,"shows":1,"blanks":1},{"date":"2026-02-05","profit":-6.5,"cum":7.88,"n":6,"wins":0,"shows":4,"blanks":2},{"date":"2026-02-06","profit":3.6,"cum":11.48,"n":2,"wins":1,"shows":1,"blanks":0},{"date":"2026-02-07","profit":8.4,"cum":19.88,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-08","profit":-1.6,"cum":18.28,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-02-11","profit":47.5,"cum":65.78,"n":6,"wins":4,"shows":0,"blanks":2},{"date":"2026-02-12","profit":37.4,"cum":103.18,"n":6,"wins":4,"shows":0,"blanks":2},{"date":"2026-02-13","profit":40.08,"cum":143.26,"n":5,"wins":3,"shows":2,"blanks":0},{"date":"2026-02-14","profit":56.48,"cum":199.74,"n":5,"wins":5,"shows":0,"blanks":0},{"date":"2026-02-15","profit":57.46,"cum":257.2,"n":6,"wins":5,"shows":1,"blanks":0},{"date":"2026-02-17","profit":0,"cum":257.2,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-18","profit":12.8,"cum":270.0,"n":3,"wins":2,"shows":1,"blanks":0},{"date":"2026-02-19","profit":20.38,"cum":290.38,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-20","profit":21.66,"cum":312.04,"n":4,"wins":3,"shows":1,"blanks":0},{"date":"2026-02-21","profit":54.4,"cum":366.44,"n":6,"wins":5,"shows":0,"blanks":1},{"date":"2026-02-22","profit":14.6,"cum":381.04,"n":3,"wins":2,"shows":0,"blanks":1},{"date":"2026-02-26","profit":-6.0,"cum":375.04,"n":2,"wins":0,"shows":0,"blanks":2},{"date":"2026-02-27","profit":0.2,"cum":375.24,"n":5,"wins":1,"shows":2,"blanks":2},{"date":"2026-02-28","profit":4.2,"cum":379.44,"n":5,"wins":1,"shows":0,"blanks":4}]},"odds_5_8":{"n":44,"wins":20,"shows":7,"blanks":17,"win_rate":45.5,"show_rate":61.4,"wagered":176.0,"returned":402.04,"net":226.04,"roi":128.4,"color":"#fb923c","name":"5/1\u20138/1 Zone","desc":"Sweet spot odds range","roi_hot":304.8,"roi_cold":27.7,"n_hot":16,"n_cold":28,"daily_pl":[{"date":"2026-01-01","profit":0,"cum":0.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-02","profit":-7.54,"cum":-7.54,"n":3,"wins":0,"shows":1,"blanks":2},{"date":"2026-01-03","profit":6.0,"cum":-1.54,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-01-04","profit":-4.0,"cum":-5.54,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-01-07","profit":0,"cum":-5.54,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-08","profit":0,"cum":-5.54,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-09","profit":-4.0,"cum":-9.54,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-01-10","profit":0,"cum":-9.54,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-11","profit":0,"cum":-9.54,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-15","profit":1.0,"cum":-8.54,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-01-16","profit":0,"cum":-8.54,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-17","profit":0,"cum":-8.54,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-18","profit":18.0,"cum":9.46,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-19","profit":0,"cum":9.46,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-21","profit":0,"cum":9.46,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-22","profit":-4.0,"cum":5.46,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-01-23","profit":0,"cum":5.46,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-24","profit":13.8,"cum":19.26,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-25","profit":-1.2,"cum":18.06,"n":2,"wins":0,"shows":2,"blanks":0},{"date":"2026-01-28","profit":11.8,"cum":29.86,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-30","profit":0,"cum":29.86,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-31","profit":11.6,"cum":41.46,"n":2,"wins":1,"shows":0,"blanks":1},{"date":"2026-02-01","profit":0,"cum":41.46,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-04","profit":-4.0,"cum":37.46,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-02-05","profit":-13.6,"cum":23.86,"n":4,"wins":0,"shows":1,"blanks":3},{"date":"2026-02-06","profit":14.92,"cum":38.78,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-07","profit":0,"cum":38.78,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-08","profit":0,"cum":38.78,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-11","profit":38.3,"cum":77.08,"n":4,"wins":3,"shows":0,"blanks":1},{"date":"2026-02-12","profit":29.4,"cum":106.48,"n":2,"wins":2,"shows":0,"blanks":0},{"date":"2026-02-13","profit":11.88,"cum":118.36,"n":2,"wins":1,"shows":1,"blanks":0},{"date":"2026-02-14","profit":41.2,"cum":159.56,"n":3,"wins":3,"shows":0,"blanks":0},{"date":"2026-02-15","profit":33.52,"cum":193.08,"n":2,"wins":2,"shows":0,"blanks":0},{"date":"2026-02-17","profit":11.8,"cum":204.88,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-18","profit":0,"cum":204.88,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-19","profit":0,"cum":204.88,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-20","profit":0,"cum":204.88,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-21","profit":28.96,"cum":233.84,"n":2,"wins":2,"shows":0,"blanks":0},{"date":"2026-02-22","profit":-4.0,"cum":229.84,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-02-26","profit":-8.0,"cum":221.84,"n":2,"wins":0,"shows":0,"blanks":2},{"date":"2026-02-27","profit":-4.0,"cum":217.84,"n":1,"wins":0,"shows":0,"blanks":1},{"date":"2026-02-28","profit":8.2,"cum":226.04,"n":3,"wins":1,"shows":0,"blanks":2}]},"v7_wed_sat":{"n":31,"wins":19,"shows":5,"blanks":7,"win_rate":61.3,"show_rate":77.4,"wagered":110.0,"returned":276.36,"net":166.36,"roi":151.2,"color":"#fbbf24","name":"V7 + Wed/Sat","desc":"Refined rules on big cards","roi_hot":239.7,"roi_cold":59.5,"n_hot":15,"n_cold":16,"daily_pl":[{"date":"2026-01-01","profit":0,"cum":0.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-02","profit":0,"cum":0.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-03","profit":6.0,"cum":6.0,"n":1,"wins":0,"shows":1,"blanks":0},{"date":"2026-01-04","profit":0,"cum":6.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-07","profit":0,"cum":6.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-08","profit":0,"cum":6.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-09","profit":0,"cum":6.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-10","profit":1.8,"cum":7.8,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-01-11","profit":0,"cum":7.8,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-15","profit":0,"cum":7.8,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-16","profit":0,"cum":7.8,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-17","profit":-3.0,"cum":4.8,"n":3,"wins":0,"shows":1,"blanks":2},{"date":"2026-01-18","profit":0,"cum":4.8,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-19","profit":0,"cum":4.8,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-21","profit":-7.8,"cum":-3.0,"n":3,"wins":0,"shows":1,"blanks":2},{"date":"2026-01-22","profit":0,"cum":-3.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-23","profit":0,"cum":-3.0,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-24","profit":18.2,"cum":15.2,"n":3,"wins":2,"shows":1,"blanks":0},{"date":"2026-01-25","profit":0,"cum":15.2,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-28","profit":0,"cum":15.2,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-30","profit":0,"cum":15.2,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-01-31","profit":15.6,"cum":30.8,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-01","profit":0,"cum":30.8,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-04","profit":3.32,"cum":34.12,"n":2,"wins":1,"shows":0,"blanks":1},{"date":"2026-02-05","profit":0,"cum":34.12,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-06","profit":0,"cum":34.12,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-07","profit":-2.0,"cum":32.12,"n":2,"wins":1,"shows":0,"blanks":1},{"date":"2026-02-08","profit":0,"cum":32.12,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-11","profit":46.36,"cum":78.48,"n":6,"wins":4,"shows":1,"blanks":1},{"date":"2026-02-12","profit":0,"cum":78.48,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-13","profit":0,"cum":78.48,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-14","profit":57.08,"cum":135.56,"n":5,"wins":5,"shows":0,"blanks":0},{"date":"2026-02-15","profit":0,"cum":135.56,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-17","profit":0,"cum":135.56,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-18","profit":22.0,"cum":157.56,"n":3,"wins":3,"shows":0,"blanks":0},{"date":"2026-02-19","profit":0,"cum":157.56,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-20","profit":0,"cum":157.56,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-21","profit":8.8,"cum":166.36,"n":1,"wins":1,"shows":0,"blanks":0},{"date":"2026-02-22","profit":0,"cum":166.36,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-26","profit":0,"cum":166.36,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-27","profit":0,"cum":166.36,"n":0,"wins":0,"shows":0,"blanks":0},{"date":"2026-02-28","profit":0,"cum":166.36,"n":0,"wins":0,"shows":0,"blanks":0}]}},"factors":{"odds":[{"label":"3\u20135/1","n":99,"win_rate":35.4,"show_rate":75.8,"roi":47.0,"net":186.22},{"label":"5\u20138/1","n":44,"win_rate":45.5,"show_rate":61.4,"roi":128.4,"net":226.04},{"label":"8\u201312/1","n":28,"win_rate":17.9,"show_rate":39.3,"roi":35.5,"net":31.98},{"label":"12\u201320/1","n":22,"win_rate":27.3,"show_rate":54.5,"roi":29.5,"net":12.98},{"label":"20/1+","n":13,"win_rate":23.1,"show_rate":53.8,"roi":160.0,"net":41.6}],"fig":[{"label":"80\u201389","n":7,"win_rate":14.3,"show_rate":28.6,"roi":-2.3,"net":-0.5},{"label":"90\u201399","n":39,"win_rate":28.2,"show_rate":71.8,"roi":52.1,"net":75.04},{"label":"100\u2013109","n":72,"win_rate":37.5,"show_rate":66.7,"roi":94.8,"net":242.68},{"label":"110+","n":86,"win_rate":34.9,"show_rate":61.6,"roi":60.4,"net":183.6}],"gap":[{"label":"5\u20137pt","n":94,"win_rate":30.9,"show_rate":61.7,"roi":64.5,"net":212.92},{"label":"8\u201311pt","n":57,"win_rate":42.1,"show_rate":70.2,"roi":102.0,"net":203.96},{"label":"12\u201319pt","n":38,"win_rate":31.6,"show_rate":57.9,"roi":25.9,"net":36.28},{"label":"20pt+","n":17,"win_rate":23.5,"show_rate":70.6,"roi":73.6,"net":45.66}],"field":[{"label":"2\u20134","n":22,"win_rate":27.3,"show_rate":68.2,"roi":24.1,"net":19.3},{"label":"5\u20136","n":73,"win_rate":37.0,"show_rate":67.1,"roi":65.5,"net":173.04},{"label":"7\u20138","n":75,"win_rate":36.0,"show_rate":61.3,"roi":81.3,"net":216.26},{"label":"9+","n":36,"win_rate":25.0,"show_rate":61.1,"roi":74.0,"net":90.22}],"dow":[{"label":"Mon","n":3,"win_rate":0.0,"show_rate":33.3,"roi":-74.0,"net":-7.4},{"label":"Wed","n":26,"win_rate":46.2,"show_rate":73.1,"roi":117.8,"net":106.06},{"label":"Thu","n":43,"win_rate":18.6,"show_rate":69.8,"roi":26.9,"net":44.72},{"label":"Fri","n":55,"win_rate":27.3,"show_rate":61.8,"roi":43.1,"net":84.54},{"label":"Sat","n":48,"win_rate":47.9,"show_rate":60.4,"roi":120.0,"net":189.58},{"label":"Sun","n":30,"win_rate":33.3,"show_rate":60.0,"roi":64.4,"net":69.52}],"ml_rank":[{"label":"ML Fav","n":22,"win_rate":36.4,"show_rate":86.4,"roi":60.0,"net":52.84},{"label":"2nd","n":54,"win_rate":33.3,"show_rate":75.9,"roi":56.8,"net":120.4},{"label":"3rd","n":43,"win_rate":34.9,"show_rate":65.1,"roi":49.7,"net":79.54},{"label":"4th\u20135th","n":56,"win_rate":25.0,"show_rate":42.9,"roi":40.7,"net":76.54},{"label":"6th+","n":31,"win_rate":45.2,"show_rate":64.5,"roi":201.8,"net":169.5}],"race_type":[{"label":"Claiming","n":141,"wins":48,"shows":41,"blanks":52,"win_rate":34.0,"show_rate":63.1,"wagered":508.0,"returned":887.44,"net":379.44,"roi":74.7},{"label":"AOC","n":32,"wins":13,"shows":7,"blanks":12,"win_rate":40.6,"show_rate":62.5,"wagered":106.0,"returned":170.62,"net":64.62,"roi":61.0},{"label":"Allowance","n":33,"wins":8,"shows":15,"blanks":10,"win_rate":24.2,"show_rate":69.7,"wagered":118.0,"returned":172.76,"net":54.76,"roi":46.4}],"track":[{"label":"OAK","full_name":"oaklawn-park","n":15,"wins":7,"shows":2,"blanks":6,"win_rate":46.7,"show_rate":60.0,"wagered":50.0,"returned":103.6,"net":53.6,"roi":107.2},{"label":"TBD","full_name":"tampa-bay-downs","n":30,"wins":11,"shows":8,"blanks":11,"win_rate":36.7,"show_rate":63.3,"wagered":100.0,"returned":200.0,"net":100.0,"roi":100.0},{"label":"GP","full_name":"gulfstream-park","n":11,"wins":4,"shows":5,"blanks":2,"win_rate":36.4,"show_rate":81.8,"wagered":42.0,"returned":78.1,"net":36.1,"roi":86.0},{"label":"AQU","full_name":"aqueduct","n":45,"wins":18,"shows":14,"blanks":13,"win_rate":40.0,"show_rate":71.1,"wagered":168.0,"returned":303.32,"net":135.32,"roi":80.5},{"label":"LAU","full_name":"laurel-park","n":28,"wins":9,"shows":6,"blanks":13,"win_rate":32.1,"show_rate":53.6,"wagered":96.0,"returned":157.7,"net":61.7,"roi":64.3},{"label":"FG","full_name":"fair-grounds","n":24,"wins":8,"shows":7,"blanks":9,"win_rate":33.3,"show_rate":62.5,"wagered":86.0,"returned":135.3,"net":49.3,"roi":57.3},{"label":"CT","full_name":"charles-town","n":37,"wins":7,"shows":15,"blanks":15,"win_rate":18.9,"show_rate":59.5,"wagered":132.0,"returned":175.6,"net":43.6,"roi":33.0},{"label":"SA","full_name":"santa-anita-park","n":14,"wins":4,"shows":6,"blanks":4,"win_rate":28.6,"show_rate":71.4,"wagered":50.0,"returned":62.0,"net":12.0,"roi":24.0}]},"scatter":[{"date":"2026-01-01","odds":8.0,"fig":102,"gap":12,"outcome":"blank","profit":-4.0,"horse":"Liberty Rising","track":"aqueduct","hot":false},{"date":"2026-01-01","odds":3.5,"fig":105,"gap":15,"outcome":"blank","profit":-4.0,"horse":"Enigmatic","track":"aqueduct","hot":false},{"date":"2026-01-01","odds":3.0,"fig":116,"gap":9,"outcome":"show","profit":-0.66,"horse":"Interceptor","track":"aqueduct","hot":false},{"date":"2026-01-02","odds":6.0,"fig":100,"gap":6,"outcome":"blank","profit":-4.0,"horse":"Unbridled Bomber","track":"aqueduct","hot":false},{"date":"2026-01-02","odds":6.0,"fig":108,"gap":6,"outcome":"show","profit":0.46,"horse":"Stewie","track":"aqueduct","hot":false},{"date":"2026-01-02","odds":3.0,"fig":127,"gap":30,"outcome":"show","profit":0.16,"horse":"Romantic Dancer","track":"aqueduct","hot":false},{"date":"2026-01-03","odds":3.58,"fig":96,"gap":5,"outcome":"win","profit":7.7,"horse":"Looks First","track":"aqueduct","hot":false},{"date":"2026-01-09","odds":4.5,"fig":107,"gap":28,"outcome":"show","profit":-0.1,"horse":"Graceful Rose","track":"aqueduct","hot":false},{"date":"2026-01-09","odds":3.0,"fig":114,"gap":7,"outcome":"blank","profit":-4.0,"horse":"Kavanaugh","track":"aqueduct","hot":false},{"date":"2026-01-11","odds":4.0,"fig":105,"gap":13,"outcome":"blank","profit":-4.0,"horse":"Enigmatic","track":"aqueduct","hot":false},{"date":"2026-01-11","odds":15.0,"fig":127,"gap":8,"outcome":"blank","profit":-2.0,"horse":"Sunny Breeze","track":"aqueduct","hot":false},{"date":"2026-01-15","odds":4.0,"fig":83,"gap":16,"outcome":"show","profit":4.74,"horse":"Heavens Lee","track":"aqueduct","hot":false},{"date":"2026-01-15","odds":3.93,"fig":118,"gap":5,"outcome":"win","profit":8.86,"horse":"Ridgewood Runner","track":"aqueduct","hot":false},{"date":"2026-01-16","odds":3.0,"fig":117,"gap":7,"outcome":"show","profit":-1.24,"horse":"Sassafrassness","track":"aqueduct","hot":false},{"date":"2026-01-16","odds":4.0,"fig":118,"gap":9,"outcome":"blank","profit":-4.0,"horse":"Aggregation","track":"aqueduct","hot":false},{"date":"2026-01-17","odds":10.0,"fig":99,"gap":8,"outcome":"show","profit":1.32,"horse":"Corvus","track":"aqueduct","hot":false},{"date":"2026-01-17","odds":4.0,"fig":120,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Beary Funny","track":"aqueduct","hot":false},{"date":"2026-01-18","odds":4.5,"fig":117,"gap":24,"outcome":"blank","profit":-4.0,"horse":"Pure Lure","track":"aqueduct","hot":false},{"date":"2026-01-18","odds":3.25,"fig":114,"gap":9,"outcome":"win","profit":7.36,"horse":"Carvellian Quest","track":"aqueduct","hot":false},{"date":"2026-01-22","odds":3.0,"fig":114,"gap":7,"outcome":"show","profit":-1.18,"horse":"Awesome Empire","track":"aqueduct","hot":false},{"date":"2026-01-22","odds":12.0,"fig":118,"gap":7,"outcome":"show","profit":2.56,"horse":"Twirling Beauty","track":"aqueduct","hot":false},{"date":"2026-01-23","odds":3.62,"fig":84,"gap":13,"outcome":"win","profit":8.76,"horse":"Top of the Table","track":"aqueduct","hot":false},{"date":"2026-02-04","odds":3.18,"fig":133,"gap":13,"outcome":"win","profit":7.32,"horse":"Ignite the Light","track":"aqueduct","hot":false},{"date":"2026-02-04","odds":8.0,"fig":107,"gap":12,"outcome":"show","profit":1.08,"horse":"Emerald Forest","track":"aqueduct","hot":false},{"date":"2026-02-05","odds":5.0,"fig":105,"gap":13,"outcome":"blank","profit":-4.0,"horse":"Enigmatic","track":"aqueduct","hot":false},{"date":"2026-02-05","odds":4.0,"fig":101,"gap":10,"outcome":"show","profit":-1.48,"horse":"Roofer","track":"aqueduct","hot":false},{"date":"2026-02-05","odds":5.0,"fig":143,"gap":29,"outcome":"blank","profit":-4.0,"horse":"Shadow Surge","track":"aqueduct","hot":false},{"date":"2026-02-06","odds":6.94,"fig":130,"gap":9,"outcome":"win","profit":14.92,"horse":"Prince Valiant","track":"aqueduct","hot":false},{"date":"2026-02-11","odds":5.36,"fig":137,"gap":10,"outcome":"win","profit":12.64,"horse":"Breslau","track":"aqueduct","hot":true},{"date":"2026-02-11","odds":3.91,"fig":122,"gap":9,"outcome":"win","profit":9.66,"horse":"Willintoriskitall","track":"aqueduct","hot":true},{"date":"2026-02-11","odds":5.15,"fig":118,"gap":11,"outcome":"win","profit":13.26,"horse":"Aggregation","track":"aqueduct","hot":true},{"date":"2026-02-11","odds":12.16,"fig":103,"gap":6,"outcome":"win","profit":5.3,"horse":"Walk With Me","track":"aqueduct","hot":true},{"date":"2026-02-13","odds":5.0,"fig":96,"gap":5,"outcome":"show","profit":-0.72,"horse":"Echo in Eternity","track":"aqueduct","hot":true},{"date":"2026-02-13","odds":4.5,"fig":98,"gap":10,"outcome":"show","profit":-0.8,"horse":"Come Full Circle","track":"aqueduct","hot":true},{"date":"2026-02-14","odds":3.88,"fig":93,"gap":14,"outcome":"win","profit":9.18,"horse":"La Gran Artesana","track":"aqueduct","hot":true},{"date":"2026-02-15","odds":7.67,"fig":114,"gap":5,"outcome":"win","profit":17.32,"horse":"Awesome Empire","track":"aqueduct","hot":true},{"date":"2026-02-15","odds":3.2,"fig":109,"gap":6,"outcome":"win","profit":7.88,"horse":"Unlimitedpotential","track":"aqueduct","hot":true},{"date":"2026-02-15","odds":4.0,"fig":97,"gap":5,"outcome":"show","profit":-1.54,"horse":"Moon Gate","track":"aqueduct","hot":true},{"date":"2026-02-19","odds":8.93,"fig":109,"gap":5,"outcome":"win","profit":20.38,"horse":"Ambition","track":"aqueduct","hot":true},{"date":"2026-02-20","odds":3.79,"fig":107,"gap":6,"outcome":"win","profit":8.46,"horse":"Come to Papa","track":"aqueduct","hot":true},{"date":"2026-02-20","odds":3.73,"fig":107,"gap":9,"outcome":"win","profit":8.44,"horse":"Graceful Rose","track":"aqueduct","hot":true},{"date":"2026-02-21","odds":12.28,"fig":118,"gap":6,"outcome":"win","profit":0.32,"horse":"Twirling Beauty","track":"aqueduct","hot":true},{"date":"2026-02-21","odds":5.96,"fig":109,"gap":6,"outcome":"win","profit":12.96,"horse":"Intentious","track":"aqueduct","hot":true},{"date":"2026-02-28","odds":6.0,"fig":102,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Liberty Rising","track":"aqueduct","hot":false},{"date":"2026-02-28","odds":12.0,"fig":121,"gap":5,"outcome":"blank","profit":-2.0,"horse":"Mr Skylight","track":"aqueduct","hot":false},{"date":"2026-01-02","odds":6.0,"fig":106,"gap":14,"outcome":"blank","profit":-4.0,"horse":"Hey River","track":"charles-town","hot":false},{"date":"2026-01-03","odds":6.0,"fig":110,"gap":15,"outcome":"show","profit":6.0,"horse":"Spurs Up","track":"charles-town","hot":false},{"date":"2026-01-07","odds":8.5,"fig":112,"gap":22,"outcome":"win","profit":19.0,"horse":"Fontabelle","track":"charles-town","hot":false},{"date":"2026-01-07","odds":8.0,"fig":103,"gap":8,"outcome":"blank","profit":-4.0,"horse":"Grapnel","track":"charles-town","hot":false},{"date":"2026-01-07","odds":10.0,"fig":108,"gap":8,"outcome":"show","profit":1.6,"horse":"Lil Knockout","track":"charles-town","hot":false},{"date":"2026-01-08","odds":8.0,"fig":111,"gap":13,"outcome":"show","profit":-1.8,"horse":"Toodleswasmyname","track":"charles-town","hot":false},{"date":"2026-01-08","odds":8.0,"fig":97,"gap":9,"outcome":"show","profit":-1.8,"horse":"Swift Waters","track":"charles-town","hot":false},{"date":"2026-01-09","odds":20.0,"fig":70,"gap":9,"outcome":"show","profit":2.0,"horse":"Amorica","track":"charles-town","hot":false},{"date":"2026-01-09","odds":10.0,"fig":104,"gap":8,"outcome":"blank","profit":-2.0,"horse":"Cheese N Crackers","track":"charles-town","hot":false},{"date":"2026-01-10","odds":4.5,"fig":114,"gap":6,"outcome":"blank","profit":-4.0,"horse":"Deterrent","track":"charles-town","hot":false},{"date":"2026-01-16","odds":8.0,"fig":98,"gap":12,"outcome":"blank","profit":-4.0,"horse":"Camelia Rod","track":"charles-town","hot":false},{"date":"2026-01-17","odds":12.0,"fig":118,"gap":32,"outcome":"show","profit":1.0,"horse":"Gone With the Wyn","track":"charles-town","hot":false},{"date":"2026-01-21","odds":3.0,"fig":110,"gap":20,"outcome":"show","profit":0.2,"horse":"Bold Rock","track":"charles-town","hot":false},{"date":"2026-01-21","odds":12.0,"fig":88,"gap":5,"outcome":"blank","profit":-2.0,"horse":"Collecting Angels","track":"charles-town","hot":false},{"date":"2026-01-21","odds":4.0,"fig":128,"gap":12,"outcome":"blank","profit":-4.0,"horse":"Jlodiamond","track":"charles-town","hot":false},{"date":"2026-01-21","odds":3.5,"fig":135,"gap":19,"outcome":"blank","profit":-4.0,"horse":"Pleasenthanku","track":"charles-town","hot":false},{"date":"2026-01-22","odds":3.0,"fig":131,"gap":22,"outcome":"show","profit":-1.8,"horse":"Echo Seven","track":"charles-town","hot":false},{"date":"2026-01-22","odds":4.0,"fig":97,"gap":5,"outcome":"show","profit":-1.4,"horse":"Lil Miss Honkytonk","track":"charles-town","hot":false},{"date":"2026-01-23","odds":4.5,"fig":143,"gap":16,"outcome":"show","profit":-1.4,"horse":"Hopping Henry","track":"charles-town","hot":false},{"date":"2026-02-04","odds":6.0,"fig":131,"gap":10,"outcome":"blank","profit":-4.0,"horse":"Delightful Dixie","track":"charles-town","hot":false},{"date":"2026-02-05","odds":5.0,"fig":90,"gap":6,"outcome":"blank","profit":-4.0,"horse":"Sassy Maxine","track":"charles-town","hot":false},{"date":"2026-02-05","odds":4.5,"fig":124,"gap":6,"outcome":"show","profit":2.2,"horse":"Youthinkthatsfunny","track":"charles-town","hot":false},{"date":"2026-02-06","odds":12.0,"fig":104,"gap":5,"outcome":"show","profit":1.4,"horse":"Fair Trade","track":"charles-town","hot":false},{"date":"2026-02-11","odds":3.0,"fig":108,"gap":20,"outcome":"show","profit":-1.6,"horse":"Lil Knockout","track":"charles-town","hot":true},{"date":"2026-02-11","odds":5.0,"fig":118,"gap":18,"outcome":"blank","profit":-4.0,"horse":"Gone With the Wyn","track":"charles-town","hot":true},{"date":"2026-02-11","odds":4.8,"fig":94,"gap":5,"outcome":"win","profit":11.2,"horse":"Skippy Town","track":"charles-town","hot":true},{"date":"2026-02-11","odds":20.0,"fig":90,"gap":5,"outcome":"blank","profit":-2.0,"horse":"Cicatriz","track":"charles-town","hot":true},{"date":"2026-02-11","odds":6.8,"fig":131,"gap":22,"outcome":"win","profit":16.4,"horse":"Echo Seven","track":"charles-town","hot":true},{"date":"2026-02-12","odds":8.0,"fig":90,"gap":11,"outcome":"blank","profit":-4.0,"horse":"Cicatriz","track":"charles-town","hot":true},{"date":"2026-02-14","odds":7.9,"fig":108,"gap":9,"outcome":"win","profit":16.8,"horse":"Mo Joke","track":"charles-town","hot":true},{"date":"2026-02-18","odds":4.9,"fig":115,"gap":14,"outcome":"win","profit":10.6,"horse":"T Rex Union","track":"charles-town","hot":true},{"date":"2026-02-20","odds":4.0,"fig":128,"gap":15,"outcome":"show","profit":-0.8,"horse":"Molly Factor","track":"charles-town","hot":true},{"date":"2026-02-20","odds":3.6,"fig":110,"gap":12,"outcome":"win","profit":7.4,"horse":"Serenade Me","track":"charles-town","hot":true},{"date":"2026-02-21","odds":8.0,"fig":100,"gap":8,"outcome":"show","profit":-1.0,"horse":"Grand Intentions","track":"charles-town","hot":true},{"date":"2026-02-21","odds":4.5,"fig":102,"gap":7,"outcome":"win","profit":11.4,"horse":"Max Forward Speed","track":"charles-town","hot":true},{"date":"2026-02-26","odds":5.0,"fig":126,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Optimistic Nate","track":"charles-town","hot":false},{"date":"2026-02-26","odds":10.0,"fig":81,"gap":5,"outcome":"blank","profit":-2.0,"horse":"Count the Flowers","track":"charles-town","hot":false},{"date":"2026-01-02","odds":12.0,"fig":119,"gap":22,"outcome":"show","profit":4.4,"horse":"Achromedoutcat","track":"fair-grounds","hot":false},{"date":"2026-01-08","odds":3.5,"fig":109,"gap":5,"outcome":"show","profit":-1.2,"horse":"Moonie Pie","track":"fair-grounds","hot":false},{"date":"2026-01-11","odds":4.5,"fig":91,"gap":6,"outcome":"blank","profit":-4.0,"horse":"Duvee","track":"fair-grounds","hot":false},{"date":"2026-01-15","odds":4.0,"fig":74,"gap":10,"outcome":"blank","profit":-4.0,"horse":"Smart Izzy","track":"fair-grounds","hot":false},{"date":"2026-01-15","odds":3.5,"fig":106,"gap":10,"outcome":"show","profit":-1.2,"horse":"Silver Halo","track":"fair-grounds","hot":false},{"date":"2026-01-15","odds":4.6,"fig":124,"gap":10,"outcome":"win","profit":13.2,"horse":"Autodrive","track":"fair-grounds","hot":false},{"date":"2026-01-16","odds":3.0,"fig":113,"gap":8,"outcome":"show","profit":-1.4,"horse":"Runnin Munnin","track":"fair-grounds","hot":false},{"date":"2026-01-16","odds":8.0,"fig":119,"gap":6,"outcome":"blank","profit":-4.0,"horse":"Achromedoutcat","track":"fair-grounds","hot":false},{"date":"2026-01-18","odds":7.7,"fig":106,"gap":34,"outcome":"win","profit":18.0,"horse":"One Line Ruler","track":"fair-grounds","hot":false},{"date":"2026-01-19","odds":4.0,"fig":108,"gap":18,"outcome":"blank","profit":-4.0,"horse":"Honor His Half","track":"fair-grounds","hot":false},{"date":"2026-01-19","odds":12.0,"fig":87,"gap":14,"outcome":"blank","profit":-2.0,"horse":"Miss Kennedy","track":"fair-grounds","hot":false},{"date":"2026-01-19","odds":3.0,"fig":130,"gap":7,"outcome":"show","profit":-1.4,"horse":"Benji Star","track":"fair-grounds","hot":false},{"date":"2026-01-22","odds":6.0,"fig":107,"gap":20,"outcome":"blank","profit":-4.0,"horse":"Unified Report","track":"fair-grounds","hot":false},{"date":"2026-01-23","odds":12.0,"fig":126,"gap":10,"outcome":"blank","profit":-2.0,"horse":"Sweet La Crema","track":"fair-grounds","hot":false},{"date":"2026-01-24","odds":6.2,"fig":116,"gap":10,"outcome":"win","profit":13.8,"horse":"Bandido Deal","track":"fair-grounds","hot":false},{"date":"2026-01-25","odds":6.0,"fig":107,"gap":10,"outcome":"show","profit":-1.4,"horse":"Miss Maximus","track":"fair-grounds","hot":false},{"date":"2026-02-05","odds":3.0,"fig":115,"gap":13,"outcome":"show","profit":-1.9,"horse":"Double Edge Sword","track":"fair-grounds","hot":false},{"date":"2026-02-07","odds":3.7,"fig":106,"gap":6,"outcome":"win","profit":8.4,"horse":"Asthecoldwindblows","track":"fair-grounds","hot":false},{"date":"2026-02-07","odds":13.0,"fig":113,"gap":19,"outcome":"win","profit":2.0,"horse":"Conch Fried Rice","track":"fair-grounds","hot":false},{"date":"2026-02-12","odds":3.7,"fig":97,"gap":5,"outcome":"win","profit":8.4,"horse":"Donegal Moonshine","track":"fair-grounds","hot":true},{"date":"2026-02-17","odds":5.5,"fig":119,"gap":5,"outcome":"win","profit":11.8,"horse":"Achromedoutcat","track":"fair-grounds","hot":true},{"date":"2026-02-22","odds":3.1,"fig":110,"gap":10,"outcome":"win","profit":7.8,"horse":"Speightful One","track":"fair-grounds","hot":false},{"date":"2026-02-27","odds":8.0,"fig":101,"gap":7,"outcome":"blank","profit":-4.0,"horse":"Storm Sniper","track":"fair-grounds","hot":false},{"date":"2026-02-28","odds":10.0,"fig":110,"gap":7,"outcome":"blank","profit":-2.0,"horse":"Dick Best","track":"fair-grounds","hot":false},{"date":"2026-01-01","odds":3.5,"fig":94,"gap":7,"outcome":"show","profit":1.0,"horse":"Friolento","track":"gulfstream-park","hot":false},{"date":"2026-01-08","odds":4.5,"fig":108,"gap":13,"outcome":"show","profit":-0.4,"horse":"Domino Vitali","track":"gulfstream-park","hot":false},{"date":"2026-01-16","odds":3.0,"fig":90,"gap":5,"outcome":"show","profit":-1.4,"horse":"My Lady James","track":"gulfstream-park","hot":false},{"date":"2026-01-18","odds":12.0,"fig":104,"gap":11,"outcome":"blank","profit":-2.0,"horse":"Humor Me Brother","track":"gulfstream-park","hot":false},{"date":"2026-01-22","odds":4.0,"fig":103,"gap":5,"outcome":"show","profit":-1.4,"horse":"Taliesin","track":"gulfstream-park","hot":false},{"date":"2026-01-31","odds":6.7,"fig":111,"gap":13,"outcome":"win","profit":15.6,"horse":"Roar Ready","track":"gulfstream-park","hot":false},{"date":"2026-02-08","odds":3.5,"fig":104,"gap":11,"outcome":"show","profit":-1.6,"horse":"Real Macho","track":"gulfstream-park","hot":false},{"date":"2026-02-12","odds":4.5,"fig":85,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Drink Deeply","track":"gulfstream-park","hot":true},{"date":"2026-02-14","odds":4.2,"fig":112,"gap":5,"outcome":"win","profit":10.6,"horse":"Pet Mat","track":"gulfstream-park","hot":true},{"date":"2026-02-15","odds":4.4,"fig":106,"gap":9,"outcome":"win","profit":9.8,"horse":"Gallo de Fuego","track":"gulfstream-park","hot":true},{"date":"2026-02-15","odds":4.9,"fig":134,"gap":27,"outcome":"win","profit":9.9,"horse":"Eclatant","track":"gulfstream-park","hot":true},{"date":"2026-01-09","odds":9.4,"fig":92,"gap":11,"outcome":"win","profit":21.2,"horse":"Twice Gold","track":"laurel-park","hot":false},{"date":"2026-01-09","odds":5.0,"fig":118,"gap":9,"outcome":"blank","profit":-4.0,"horse":"Irish Hero","track":"laurel-park","hot":false},{"date":"2026-01-09","odds":20.0,"fig":94,"gap":11,"outcome":"blank","profit":-2.0,"horse":"Just the Thing","track":"laurel-park","hot":false},{"date":"2026-01-10","odds":12.2,"fig":133,"gap":12,"outcome":"win","profit":1.8,"horse":"In My Memories","track":"laurel-park","hot":false},{"date":"2026-01-16","odds":10.0,"fig":113,"gap":7,"outcome":"blank","profit":-2.0,"horse":"Laddie Dance","track":"laurel-park","hot":false},{"date":"2026-01-17","odds":8.0,"fig":113,"gap":9,"outcome":"blank","profit":-4.0,"horse":"Casa Juanita","track":"laurel-park","hot":false},{"date":"2026-01-17","odds":15.0,"fig":106,"gap":10,"outcome":"blank","profit":-2.0,"horse":"Amazing Bernie","track":"laurel-park","hot":false},{"date":"2026-01-23","odds":4.5,"fig":132,"gap":39,"outcome":"blank","profit":-4.0,"horse":"Could Be a Cougar","track":"laurel-park","hot":false},{"date":"2026-01-23","odds":4.5,"fig":81,"gap":5,"outcome":"blank","profit":-4.0,"horse":"By the Glass","track":"laurel-park","hot":false},{"date":"2026-01-23","odds":20.0,"fig":121,"gap":6,"outcome":"show","profit":4.0,"horse":"Crab Daddy","track":"laurel-park","hot":false},{"date":"2026-01-23","odds":4.5,"fig":109,"gap":7,"outcome":"blank","profit":-4.0,"horse":"Candycrumbs","track":"laurel-park","hot":false},{"date":"2026-01-30","odds":3.8,"fig":98,"gap":7,"outcome":"win","profit":8.0,"horse":"Weekend Wife","track":"laurel-park","hot":false},{"date":"2026-02-05","odds":5.0,"fig":116,"gap":11,"outcome":"show","profit":-1.6,"horse":"Schrader","track":"laurel-park","hot":false},{"date":"2026-02-05","odds":20.0,"fig":106,"gap":6,"outcome":"show","profit":4.6,"horse":"Union Fleet","track":"laurel-park","hot":false},{"date":"2026-02-05","odds":4.5,"fig":111,"gap":5,"outcome":"show","profit":0.4,"horse":"Hatch","track":"laurel-park","hot":false},{"date":"2026-02-06","odds":11.3,"fig":104,"gap":15,"outcome":"win","profit":2.2,"horse":"Fabia","track":"laurel-park","hot":false},{"date":"2026-02-12","odds":8.0,"fig":140,"gap":12,"outcome":"blank","profit":-4.0,"horse":"No Easy Days","track":"laurel-park","hot":true},{"date":"2026-02-13","odds":3.3,"fig":112,"gap":9,"outcome":"win","profit":7.2,"horse":"Paco the Taco Man","track":"laurel-park","hot":true},{"date":"2026-02-14","odds":5.5,"fig":106,"gap":8,"outcome":"win","profit":13.2,"horse":"Bigtonten","track":"laurel-park","hot":true},{"date":"2026-02-15","odds":7.2,"fig":109,"gap":5,"outcome":"win","profit":16.2,"horse":"Candycrumbs","track":"laurel-park","hot":true},{"date":"2026-02-20","odds":3.5,"fig":133,"gap":16,"outcome":"blank","profit":-4.0,"horse":"In My Memories","track":"laurel-park","hot":true},{"date":"2026-02-20","odds":4.0,"fig":95,"gap":6,"outcome":"show","profit":-1.8,"horse":"Beach Cowboy","track":"laurel-park","hot":true},{"date":"2026-02-21","odds":6.6,"fig":102,"gap":6,"outcome":"win","profit":16.0,"horse":"Mad for Maddy","track":"laurel-park","hot":true},{"date":"2026-02-22","odds":20.0,"fig":103,"gap":8,"outcome":"blank","profit":-2.0,"horse":"The Count Is On","track":"laurel-park","hot":false},{"date":"2026-02-22","odds":5.0,"fig":121,"gap":19,"outcome":"blank","profit":-4.0,"horse":"Kilo Road","track":"laurel-park","hot":false},{"date":"2026-02-27","odds":3.5,"fig":113,"gap":9,"outcome":"show","profit":-1.9,"horse":"Laddie Dance","track":"laurel-park","hot":false},{"date":"2026-02-28","odds":7.1,"fig":95,"gap":5,"outcome":"win","profit":16.2,"horse":"Hawkstone","track":"laurel-park","hot":false},{"date":"2026-02-28","odds":6.0,"fig":106,"gap":6,"outcome":"blank","profit":-4.0,"horse":"Bigtonten","track":"laurel-park","hot":false},{"date":"2026-01-01","odds":3.0,"fig":99,"gap":6,"outcome":"show","profit":-0.6,"horse":"Purse Thief","track":"oaklawn-park","hot":false},{"date":"2026-01-01","odds":4.0,"fig":100,"gap":6,"outcome":"show","profit":1.2,"horse":"French Horn","track":"oaklawn-park","hot":false},{"date":"2026-01-04","odds":8.0,"fig":94,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Differently","track":"oaklawn-park","hot":false},{"date":"2026-01-04","odds":10.0,"fig":125,"gap":5,"outcome":"blank","profit":-2.0,"horse":"Trademark","track":"oaklawn-park","hot":false},{"date":"2026-02-13","odds":9.4,"fig":108,"gap":8,"outcome":"win","profit":21.8,"horse":"Tizntshelovely","track":"oaklawn-park","hot":true},{"date":"2026-02-14","odds":3.5,"fig":115,"gap":7,"outcome":"blank","profit":-4.0,"horse":"Aaron","track":"oaklawn-park","hot":true},{"date":"2026-02-14","odds":36.3,"fig":116,"gap":5,"outcome":"win","profit":9.0,"horse":"Otello","track":"oaklawn-park","hot":true},{"date":"2026-02-15","odds":3.5,"fig":92,"gap":5,"outcome":"win","profit":7.8,"horse":"Mo Sense","track":"oaklawn-park","hot":true},{"date":"2026-02-20","odds":15.0,"fig":109,"gap":11,"outcome":"win","profit":4.6,"horse":"Gee No Hollander","track":"oaklawn-park","hot":true},{"date":"2026-02-20","odds":4.9,"fig":111,"gap":10,"outcome":"win","profit":11.4,"horse":"R Pretty Kitty","track":"oaklawn-park","hot":true},{"date":"2026-02-21","odds":22.8,"fig":104,"gap":6,"outcome":"win","profit":9.6,"horse":"Lady Dreamer","track":"oaklawn-park","hot":true},{"date":"2026-02-22","odds":3.9,"fig":104,"gap":9,"outcome":"win","profit":8.8,"horse":"El Diablo Rojo","track":"oaklawn-park","hot":false},{"date":"2026-02-26","odds":5.0,"fig":107,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Adogate","track":"oaklawn-park","hot":false},{"date":"2026-02-28","odds":3.5,"fig":94,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Little Dixie","track":"oaklawn-park","hot":false},{"date":"2026-02-28","odds":10.0,"fig":121,"gap":6,"outcome":"blank","profit":-2.0,"horse":"U Devil You","track":"oaklawn-park","hot":false},{"date":"2026-02-13","odds":4.0,"fig":125,"gap":10,"outcome":"blank","profit":-4.0,"horse":"Turn North","track":"sam-houston-race-park","hot":true},{"date":"2026-02-14","odds":5.0,"fig":110,"gap":13,"outcome":"win","profit":11.2,"horse":"Successfulpath","track":"sam-houston-race-park","hot":true},{"date":"2026-01-02","odds":20.0,"fig":117,"gap":12,"outcome":"blank","profit":-2.0,"horse":"Naval Harbor","track":"santa-anita-park","hot":false},{"date":"2026-01-09","odds":3.0,"fig":114,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Scary Fast Ride","track":"santa-anita-park","hot":false},{"date":"2026-01-11","odds":4.0,"fig":103,"gap":6,"outcome":"show","profit":-0.8,"horse":"Hondo Crouch","track":"santa-anita-park","hot":false},{"date":"2026-01-11","odds":3.5,"fig":115,"gap":5,"outcome":"show","profit":-1.8,"horse":"Our Moonlight","track":"santa-anita-park","hot":false},{"date":"2026-01-15","odds":5.0,"fig":101,"gap":13,"outcome":"show","profit":1.0,"horse":"Unbridled Scholar","track":"santa-anita-park","hot":false},{"date":"2026-01-16","odds":3.5,"fig":96,"gap":5,"outcome":"show","profit":-1.4,"horse":"Uncle Evco","track":"santa-anita-park","hot":false},{"date":"2026-01-18","odds":4.0,"fig":98,"gap":7,"outcome":"show","profit":-0.8,"horse":"Alpine Thunder","track":"santa-anita-park","hot":false},{"date":"2026-01-24","odds":3.3,"fig":110,"gap":7,"outcome":"win","profit":7.2,"horse":"Uffda","track":"santa-anita-park","hot":false},{"date":"2026-01-24","odds":3.5,"fig":110,"gap":10,"outcome":"win","profit":5.0,"horse":"Thirsty Trickster","track":"santa-anita-park","hot":false},{"date":"2026-02-01","odds":20.0,"fig":108,"gap":5,"outcome":"blank","profit":-2.0,"horse":"Kool Tap Dancer","track":"santa-anita-park","hot":false},{"date":"2026-02-14","odds":3.3,"fig":101,"gap":13,"outcome":"win","profit":6.7,"horse":"Unbridled Scholar","track":"santa-anita-park","hot":true},{"date":"2026-02-21","odds":3.8,"fig":98,"gap":10,"outcome":"win","profit":8.8,"horse":"Alpine Thunder","track":"santa-anita-park","hot":true},{"date":"2026-02-27","odds":3.0,"fig":99,"gap":22,"outcome":"show","profit":-1.9,"horse":"Maniae","track":"santa-anita-park","hot":false},{"date":"2026-02-28","odds":12.0,"fig":91,"gap":5,"outcome":"blank","profit":-2.0,"horse":"Bet the Om","track":"santa-anita-park","hot":false},{"date":"2026-01-02","odds":4.0,"fig":111,"gap":7,"outcome":"show","profit":-0.4,"horse":"Tennesseehoneybee","track":"tampa-bay-downs","hot":false},{"date":"2026-01-03","odds":4.0,"fig":114,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Just Relax","track":"tampa-bay-downs","hot":false},{"date":"2026-01-03","odds":12.0,"fig":107,"gap":5,"outcome":"blank","profit":-2.0,"horse":"Bustin Away","track":"tampa-bay-downs","hot":false},{"date":"2026-01-03","odds":10.0,"fig":124,"gap":5,"outcome":"blank","profit":-2.0,"horse":"Empire Sky","track":"tampa-bay-downs","hot":false},{"date":"2026-01-04","odds":6.0,"fig":114,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Prince of Ayrshire","track":"tampa-bay-downs","hot":false},{"date":"2026-01-07","odds":3.0,"fig":109,"gap":7,"outcome":"show","profit":-1.4,"horse":"Metaphor","track":"tampa-bay-downs","hot":false},{"date":"2026-01-07","odds":4.0,"fig":103,"gap":7,"outcome":"show","profit":0.2,"horse":"Ship It","track":"tampa-bay-downs","hot":false},{"date":"2026-01-10","odds":20.0,"fig":108,"gap":6,"outcome":"show","profit":16.8,"horse":"Norfie","track":"tampa-bay-downs","hot":false},{"date":"2026-01-11","odds":12.0,"fig":98,"gap":10,"outcome":"show","profit":4.4,"horse":"Bramble Bush","track":"tampa-bay-downs","hot":false},{"date":"2026-01-17","odds":15.0,"fig":142,"gap":28,"outcome":"blank","profit":-2.0,"horse":"Curlin Gunner","track":"tampa-bay-downs","hot":false},{"date":"2026-01-18","odds":4.5,"fig":98,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Awesome Pic","track":"tampa-bay-downs","hot":false},{"date":"2026-01-23","odds":30.0,"fig":101,"gap":7,"outcome":"blank","profit":-2.0,"horse":"Special Affair","track":"tampa-bay-downs","hot":false},{"date":"2026-01-24","odds":3.0,"fig":94,"gap":13,"outcome":"show","profit":-0.6,"horse":"Blue Fashion","track":"tampa-bay-downs","hot":false},{"date":"2026-01-25","odds":6.0,"fig":98,"gap":10,"outcome":"show","profit":0.2,"horse":"Bramble Bush","track":"tampa-bay-downs","hot":false},{"date":"2026-01-28","odds":5.2,"fig":108,"gap":7,"outcome":"win","profit":11.8,"horse":"Norfie","track":"tampa-bay-downs","hot":false},{"date":"2026-01-31","odds":6.0,"fig":108,"gap":5,"outcome":"blank","profit":-4.0,"horse":"Double Echo","track":"tampa-bay-downs","hot":false},{"date":"2026-02-05","odds":3.6,"fig":107,"gap":8,"outcome":"win","profit":7.6,"horse":"Flowers for Me","track":"tampa-bay-downs","hot":false},{"date":"2026-02-07","odds":4.5,"fig":108,"gap":10,"outcome":"blank","profit":-4.0,"horse":"Life Is Precious","track":"tampa-bay-downs","hot":false},{"date":"2026-02-12","odds":3.2,"fig":103,"gap":11,"outcome":"win","profit":7.6,"horse":"Whiting Field","track":"tampa-bay-downs","hot":true},{"date":"2026-02-12","odds":5.4,"fig":101,"gap":11,"outcome":"win","profit":12.6,"horse":"Allons","track":"tampa-bay-downs","hot":true},{"date":"2026-02-12","odds":7.3,"fig":103,"gap":5,"outcome":"win","profit":16.8,"horse":"Ship It","track":"tampa-bay-downs","hot":true},{"date":"2026-02-13","odds":5.8,"fig":103,"gap":6,"outcome":"win","profit":12.6,"horse":"Secret Treasure","track":"tampa-bay-downs","hot":true},{"date":"2026-02-18","odds":12.0,"fig":98,"gap":6,"outcome":"show","profit":1.4,"horse":"Twizzle","track":"tampa-bay-downs","hot":true},{"date":"2026-02-18","odds":46.9,"fig":142,"gap":19,"outcome":"win","profit":7.6,"horse":"Curlin Gunner","track":"tampa-bay-downs","hot":true},{"date":"2026-02-18","odds":17.9,"fig":111,"gap":8,"outcome":"win","profit":3.8,"horse":"Keigs","track":"tampa-bay-downs","hot":true},{"date":"2026-02-20","odds":4.3,"fig":96,"gap":6,"outcome":"win","profit":10.4,"horse":"New Plex","track":"tampa-bay-downs","hot":true},{"date":"2026-02-21","odds":4.6,"fig":92,"gap":5,"outcome":"win","profit":10.6,"horse":"Red Eleanor","track":"tampa-bay-downs","hot":true},{"date":"2026-02-21","odds":10.0,"fig":106,"gap":11,"outcome":"blank","profit":-2.0,"horse":"Feelthebeat","track":"tampa-bay-downs","hot":true},{"date":"2026-02-27","odds":6.0,"fig":94,"gap":15,"outcome":"blank","profit":-4.0,"horse":"Unicycle","track":"tampa-bay-downs","hot":false},{"date":"2026-02-27","odds":4.5,"fig":106,"gap":5,"outcome":"win","profit":12.0,"horse":"Feelthebeat","track":"tampa-bay-downs","hot":false}]};
+init();
 
-// ── STRATEGY CONFIG ──────────────────────────────────────────────────────────
-const STRATEGY_META = {
-  v1_baseline:         { name: 'V1 Baseline',         desc: 'All qualifying bets — full ruleset, no extra filters', color: '#c9a84c', badge: 'badge-gold', badgeText: 'FOUNDATION' },
-  v7_refined:          { name: 'V7 Refined',           desc: 'Fig ≥ 90 · Gap ≥ 8pt · Skip 8/1–12/1 dead zone',     color: '#5b9cf6', badge: 'badge-blue', badgeText: 'REFINED' },
-  wed_sat:             { name: 'Wed + Sat Cards',      desc: 'Major cards only — Wednesday and Saturday races',     color: '#e8c870', badge: 'badge-gold', badgeText: 'SCHEDULE' },
-  rank_6plus:          { name: 'Rank 6+ Divergence',   desc: 'Top-fig horse is 6th+ in ML betting order',          color: '#3ddc97', badge: 'badge-green', badgeText: 'ANOMALY' },
-  rank_6_odds_under10: { name: 'Rank 6+ Under 10/1',   desc: 'Strong divergence, priced under 10/1 at post',       color: '#3ddc97', badge: 'badge-green', badgeText: 'BEST EDGE' },
-  claiming_only:       { name: 'Claiming Only',         desc: 'Claiming races exclusively — most reliable form',    color: '#a78bfa', badge: 'badge-blue', badgeText: 'CLASS' },
-  odds_5_8:            { name: '5/1–8/1 Zone',          desc: 'Only bet horses going off between 5/1 and 8/1',     color: '#f97316', badge: 'badge-gold', badgeText: 'ODDS' },
-  v7_wed_sat:          { name: 'V7 + Wed/Sat',          desc: 'Refined rules on major cards only',                 color: '#e8c870', badge: 'badge-gold', badgeText: 'COMBO' },
+</script>
+<script>
+// Strategy metadata
+const META = {
+  v1_baseline:  {badge:'FOUNDATION', badgeColor:'rgba(200,168,75,.2)', badgeText:'#c8a84b'},
+  v7_refined:   {badge:'REFINED',    badgeColor:'rgba(79,142,245,.18)', badgeText:'#4f8ef5'},
+  wed_sat:      {badge:'SCHEDULE',   badgeColor:'rgba(232,204,122,.18)',badgeText:'#e8cc7a'},
+  rank_6plus:   {badge:'ANOMALY',    badgeColor:'rgba(56,217,138,.15)', badgeText:'#38d98a'},
+  rank_6_u10:   {badge:'BEST EDGE',  badgeColor:'rgba(52,205,184,.15)', badgeText:'#34cdb8'},
+  claiming_only:{badge:'CLASS',      badgeColor:'rgba(155,114,245,.15)',badgeText:'#9b72f5'},
+  odds_5_8:     {badge:'ODDS ZONE',  badgeColor:'rgba(245,130,58,.15)', badgeText:'#f5823a'},
+  v7_wed_sat:   {badge:'COMBO',      badgeColor:'rgba(251,191,36,.15)', badgeText:'#fbbf24'},
 };
 
-// Active strategies on chart
-const activeStrategies = new Set(['v1_baseline', 'v7_refined', 'rank_6plus']);
+const activeKeys = new Set(['v1_baseline','v7_refined','rank_6plus']);
+let D = null; // data loaded below
 
-// ── RENDER STRATEGY CARDS ───────────────────────────────────────────────────
+function pct(n) { return (n >= 0 ? '+' : '') + n.toFixed(1) + '%'; }
+function dollar(n) { return (n >= 0 ? '+' : '') + '$' + Math.abs(n).toFixed(2); }
+
+// ── RENDER HEADER META ───────────────────────────────────────────────────────
+function renderMeta() {
+  if (!D) return;
+  const m = D.meta;
+  document.getElementById('hdMeta').innerHTML = `
+    <span><span class="pip"></span>${m.total_bets} qualifying bets</span>
+    <span><span class="pip"></span>${m.total_days} racing days</span>
+    <span><span class="pip"></span>${m.date_range}</span>
+    <span><span class="pip"></span>Dirt · 4YO+ · No maiden · Tote odds where available</span>
+  `;
+}
+
+// ── RENDER STRATEGY CARDS ────────────────────────────────────────────────────
 function renderCards() {
-  const grid = document.getElementById('strategyGrid');
-  const keys = Object.keys(RAW.strategies);
+  const grid = document.getElementById('cardGrid');
   grid.innerHTML = '';
-
-  keys.forEach((key, i) => {
-    const s = RAW.strategies[key];
-    const meta = STRATEGY_META[key] || { name: key, color: '#888', badge: 'badge-blue', badgeText: 'SYSTEM', desc: '' };
-    const roiClass = s.roi >= 0 ? 'roi-pos' : 'roi-neg';
-    const roiSign = s.roi >= 0 ? '+' : '';
+  Object.entries(D.strategies).forEach(([key, s], i) => {
+    const m = META[key] || {badge:'SYSTEM',badgeColor:'rgba(255,255,255,.1)',badgeText:'#888'};
+    const on = activeKeys.has(key);
     const winPct = s.win_rate;
-    const showPct = s.show_rate - s.win_rate;
-    const blankPct = 100 - s.show_rate;
-    const isActive = activeStrategies.has(key);
-
+    const showPct = Math.max(0, s.show_rate - s.win_rate);
+    const blankPct = Math.max(0, 100 - s.show_rate);
     const card = document.createElement('div');
-    card.className = `card fade-in${isActive ? ' active' : ''}`;
-    card.style.setProperty('--card-accent', meta.color);
+    card.className = `scard fade${on?' on':''}`;
+    card.style.cssText = `--c:${s.color};animation-delay:${i*0.06}s`;
     card.dataset.key = key;
     card.innerHTML = `
-      <div class="card-header">
-        <div class="card-name">${meta.name}</div>
-        <div class="card-badge ${meta.badge}">${meta.badgeText}</div>
+      <div class="scard-top">
+        <div>
+          <div class="scard-name">${s.name}</div>
+          <div class="scard-desc">${s.desc}</div>
+        </div>
+        <div class="badge" style="background:${m.badgeColor};color:${m.badgeText};border-color:${m.badgeText}40">${m.badge}</div>
       </div>
-      <div class="card-roi ${roiClass}">${roiSign}${s.roi}%</div>
-      <div class="card-net">Net ${s.net >= 0 ? '+' : ''}$${s.net.toFixed(2)} on $${s.wagered.toFixed(0)} wagered</div>
-      <div class="card-stats">
-        <div class="stat">
-          <div class="stat-val">${s.n}</div>
-          <div class="stat-lbl">Bets</div>
+      <div class="roi-row">
+        <div class="roi-big ${s.roi>=0?'roi-pos':'roi-neg'}">${pct(s.roi)}</div>
+        <div class="roi-cold-wrap">
+          <span class="roi-cold-label">Ex-hot-streak</span>
+          <div class="roi-cold ${s.roi_cold>=0?'roi-pos':'roi-neg'}">${pct(s.roi_cold)}</div>
         </div>
-        <div class="stat">
-          <div class="stat-val">${s.win_rate}%</div>
-          <div class="stat-lbl">Win</div>
-        </div>
-        <div class="stat">
-          <div class="stat-val">${s.show_rate}%</div>
-          <div class="stat-lbl">Show</div>
-        </div>
+      </div>
+      <div class="roi-hot-note">${dollar(s.net)} · ${s.n} bets · ${s.n_hot} in hot streak</div>
+      <div class="scard-stats">
+        <div class="stat"><div class="stat-v">${s.n}</div><div class="stat-l">Bets</div></div>
+        <div class="stat"><div class="stat-v" style="color:var(--win-c)">${s.win_rate}%</div><div class="stat-l">Win</div></div>
+        <div class="stat"><div class="stat-v" style="color:var(--show-c)">${s.show_rate}%</div><div class="stat-l">Show</div></div>
       </div>
       <div class="outcome-bar">
-        <div class="bar-win" style="width:${winPct}%"></div>
-        <div class="bar-show" style="width:${showPct}%"></div>
-        <div class="bar-blank" style="width:${blankPct}%"></div>
+        <div class="ob-win" style="width:${winPct}%"></div>
+        <div class="ob-show" style="width:${showPct}%"></div>
+        <div class="ob-blank" style="width:${blankPct}%"></div>
       </div>
     `;
-    card.addEventListener('click', () => toggleStrategy(key, card));
+    card.addEventListener('click', () => toggleCard(key));
     grid.appendChild(card);
   });
 }
 
-function toggleStrategy(key, card) {
-  if (activeStrategies.has(key)) {
-    if (activeStrategies.size === 1) return; // keep at least one
-    activeStrategies.delete(key);
-    card.classList.remove('active');
+function toggleCard(key) {
+  if (activeKeys.has(key)) {
+    if (activeKeys.size === 1) return;
+    activeKeys.delete(key);
   } else {
-    activeStrategies.add(key);
-    card.classList.add('active');
+    activeKeys.add(key);
   }
-  renderChart();
-  renderLegend();
+  document.querySelectorAll('.scard').forEach(c => {
+    c.classList.toggle('on', activeKeys.has(c.dataset.key));
+  });
+  document.querySelectorAll('.leg-item').forEach(l => {
+    l.classList.toggle('off', !activeKeys.has(l.dataset.key));
+  });
+  drawEquity();
 }
 
 // ── EQUITY CHART ─────────────────────────────────────────────────────────────
-const canvas = document.getElementById('equityChart');
-const ctx = canvas.getContext('2d');
-let hoveredPoint = null;
+const eqC = document.getElementById('eqCanvas');
+const eqCtx = eqC.getContext('2d');
 
-function getCanvasSize() {
+function sizeCanvas(canvas, h) {
   const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const w = rect.width - 48;
-  const h = parseInt(getComputedStyle(canvas).height) || 320;
-  return { w, h, dpr };
+  const w = canvas.parentElement.clientWidth - 52;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  canvas.getContext('2d').scale(dpr, dpr);
+  return { w, h };
 }
 
-function renderChart() {
-  const { w, h, dpr } = getCanvasSize();
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
-  canvas.style.width = w + 'px';
-  canvas.style.height = h + 'px';
-  ctx.scale(dpr, dpr);
-
-  const pad = { top: 20, right: 20, bottom: 36, left: 64 };
-  const cw = w - pad.left - pad.right;
-  const ch = h - pad.top - pad.bottom;
-
-  const dates = RAW.dates;
+function drawEquity() {
+  if (!D) return;
+  const h = parseInt(getComputedStyle(eqC).height) || 340;
+  const { w } = sizeCanvas(eqC, h);
+  const ctx = eqCtx;
+  const pad = { t:20, r:24, b:38, l:68 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+  const dates = D.meta.dates;
   const N = dates.length;
+  if (!N) return;
 
-  // Find global min/max across active strategies
-  let globalMin = 0, globalMax = 0;
-  for (const key of activeStrategies) {
-    const daily = RAW.strategies[key].daily_pl;
-    for (const d of daily) {
-      globalMin = Math.min(globalMin, d.cum);
-      globalMax = Math.max(globalMax, d.cum);
+  // y range
+  let yMin = 0, yMax = 0;
+  for (const key of activeKeys) {
+    for (const pt of D.strategies[key].daily_pl) {
+      yMin = Math.min(yMin, pt.cum); yMax = Math.max(yMax, pt.cum);
     }
   }
-  const pad_y = (globalMax - globalMin) * 0.08 || 20;
-  const yMin = globalMin - pad_y;
-  const yMax = globalMax + pad_y;
-  const yRange = yMax - yMin || 1;
+  const yPad = (yMax - yMin) * 0.1 || 20;
+  yMin -= yPad; yMax += yPad;
+  const yR = yMax - yMin || 1;
 
-  const xOf = (i) => pad.left + (i / (N - 1)) * cw;
-  const yOf = (v) => pad.top + ch - ((v - yMin) / yRange) * ch;
+  const xOf = i => pad.l + (i / Math.max(N-1,1)) * cw;
+  const yOf = v => pad.t + ch - ((v - yMin) / yR) * ch;
 
-  // Grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-  ctx.lineWidth = 1;
-  const ySteps = 5;
-  for (let i = 0; i <= ySteps; i++) {
-    const v = yMin + (yRange / ySteps) * i;
-    const y = yOf(v);
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
-    // Y label
-    ctx.fillStyle = 'rgba(136,153,170,0.7)';
-    ctx.font = '10px DM Mono, monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText((v >= 0 ? '+' : '') + '$' + v.toFixed(0), pad.left - 8, y + 4);
+  ctx.clearRect(0, 0, w, h);
+
+  // hot streak region
+  const hotStart = D.meta.hot_streak.start;
+  const hotEnd = D.meta.hot_streak.end;
+  const hi0 = dates.indexOf(hotStart);
+  const hi1 = dates.indexOf(hotEnd);
+  if (hi0 >= 0 && hi1 >= 0) {
+    ctx.fillStyle = 'rgba(200,168,75,0.07)';
+    ctx.fillRect(xOf(hi0), pad.t, xOf(hi1)-xOf(hi0), ch);
+    ctx.fillStyle = 'rgba(200,168,75,0.6)';
+    ctx.font = '9px DM Mono,monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('HOT STREAK', (xOf(hi0)+xOf(hi1))/2, pad.t + 12);
   }
 
-  // Zero line
-  const zeroY = yOf(0);
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath(); ctx.moveTo(pad.left, zeroY); ctx.lineTo(pad.left + cw, zeroY); ctx.stroke();
+  // grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const v = yMin + (yR/5)*i;
+    const y = yOf(v);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+cw, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(122,143,168,0.7)';
+    ctx.font = '10px DM Mono,monospace'; ctx.textAlign = 'right';
+    ctx.fillText((v>=0?'+':'')+'$'+v.toFixed(0), pad.l-8, y+4);
+  }
+
+  // zero line
+  const z = yOf(0);
+  ctx.setLineDash([3,5]); ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.beginPath(); ctx.moveTo(pad.l,z); ctx.lineTo(pad.l+cw,z); ctx.stroke();
   ctx.setLineDash([]);
 
-  // X axis labels (monthly)
-  ctx.fillStyle = 'rgba(136,153,170,0.7)';
-  ctx.font = '10px DM Mono, monospace';
-  ctx.textAlign = 'center';
-  dates.forEach((d, i) => {
-    if (d.endsWith('-01') || d.endsWith('-15')) {
-      const label = d.slice(5); // MM-DD
-      ctx.fillText(label, xOf(i), h - pad.bottom + 16);
-    }
+  // x labels
+  ctx.fillStyle = 'rgba(122,143,168,0.6)'; ctx.font = '10px DM Mono,monospace'; ctx.textAlign='center';
+  dates.forEach((d,i) => {
+    if (d.slice(8)==='01' || d.slice(8)==='15') ctx.fillText(d.slice(5), xOf(i), h-pad.b+16);
   });
 
-  // Draw each active strategy
-  const keys = [...activeStrategies];
-  keys.forEach((key) => {
-    const meta = STRATEGY_META[key] || { color: '#888' };
-    const daily = RAW.strategies[key].daily_pl;
-    const color = meta.color;
+  // curves
+  const cumMap = {};
+  for (const key of activeKeys) {
+    const m = {};
+    for (const pt of D.strategies[key].daily_pl) m[pt.date] = pt.cum;
+    cumMap[key] = m;
+  }
 
-    // Build path
+  for (const key of activeKeys) {
+    const s = D.strategies[key];
+    const m = cumMap[key];
+    const color = s.color;
+
+    // fill
+    ctx.save(); ctx.globalAlpha = 0.07; ctx.fillStyle = color;
     ctx.beginPath();
-    dates.forEach((d, i) => {
-      const point = daily.find(p => p.date === d);
-      const cum = point ? point.cum : (i > 0 ? daily.slice(0, i).filter(p => p).pop()?.cum || 0 : 0);
-      if (i === 0) ctx.moveTo(xOf(i), yOf(cum));
-      else ctx.lineTo(xOf(i), yOf(cum));
-    });
-
-    // Fill
-    ctx.save();
-    ctx.globalAlpha = 0.08;
-    ctx.fillStyle = color;
-    ctx.lineTo(xOf(N-1), yOf(0));
-    ctx.lineTo(xOf(0), yOf(0));
-    ctx.closePath();
-    ctx.fill();
+    let last = 0;
+    dates.forEach((d,i) => { const v = m[d] ?? last; last=v; if(i===0) ctx.moveTo(xOf(i),yOf(v)); else ctx.lineTo(xOf(i),yOf(v)); });
+    ctx.lineTo(xOf(N-1),yOf(0)); ctx.lineTo(xOf(0),yOf(0)); ctx.closePath(); ctx.fill();
     ctx.restore();
 
-    // Stroke
-    ctx.beginPath();
-    dates.forEach((d, i) => {
-      const point = daily.find(p => p.date === d);
-      const cum = point ? point.cum : 0;
-      if (i === 0) ctx.moveTo(xOf(i), yOf(cum));
-      else ctx.lineTo(xOf(i), yOf(cum));
-    });
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    // line
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+    last=0;
+    dates.forEach((d,i) => { const v = m[d] ?? last; last=v; if(i===0) ctx.moveTo(xOf(i),yOf(v)); else ctx.lineTo(xOf(i),yOf(v)); });
     ctx.stroke();
 
-    // Final dot
-    const last = daily[daily.length - 1];
-    if (last) {
-      const lastIdx = dates.indexOf(last.date);
-      const lx = xOf(lastIdx); const ly = yOf(last.cum);
-      ctx.beginPath();
-      ctx.arc(lx, ly, 4, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
-      ctx.strokeStyle = '#0a0c0f';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-  });
-}
-
-function renderLegend() {
-  const legend = document.getElementById('chartLegend');
-  legend.innerHTML = '';
-  Object.keys(RAW.strategies).forEach(key => {
-    const s = RAW.strategies[key];
-    const meta = STRATEGY_META[key] || { name: key, color: '#888' };
-    const isHidden = !activeStrategies.has(key);
-    const item = document.createElement('div');
-    item.className = `legend-item${isHidden ? ' hidden' : ''}`;
-    item.innerHTML = `
-      <div class="legend-dot" style="background:${meta.color}"></div>
-      <span>${meta.name}</span>
-      <span class="legend-roi" style="color:${meta.color}">${s.roi >= 0 ? '+' : ''}${s.roi}%</span>
-    `;
-    item.addEventListener('click', () => {
-      const card = document.querySelector(`.card[data-key="${key}"]`);
-      if (card) toggleStrategy(key, card);
-    });
-    legend.appendChild(item);
-  });
-}
-
-// ── TOOLTIP ON HOVER ─────────────────────────────────────────────────────────
-canvas.addEventListener('mousemove', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const { w } = getCanvasSize();
-  const pad = { left: 64, right: 20 };
-  const cw = w - pad.left - pad.right;
-  const N = RAW.dates.length;
-  const idx = Math.round(((mx - pad.left) / cw) * (N - 1));
-  if (idx < 0 || idx >= N) { hideTooltip(); return; }
-
-  const date = RAW.dates[idx];
-  const tooltip = document.getElementById('tooltip');
-  let html = `<div class="tooltip-date">${date}</div>`;
-
-  for (const key of activeStrategies) {
-    const meta = STRATEGY_META[key] || { name: key, color: '#888' };
-    const point = RAW.strategies[key].daily_pl.find(p => p.date === date);
-    if (point) {
-      const sign = point.cum >= 0 ? '+' : '';
-      html += `<div class="tooltip-row"><span style="color:${meta.color}">${meta.name.split(' ').slice(0,2).join(' ')}</span><span>${sign}$${point.cum.toFixed(2)}</span></div>`;
+    // end dot
+    const lastPt = D.strategies[key].daily_pl.slice(-1)[0];
+    if (lastPt) {
+      const li = dates.indexOf(lastPt.date); const lv = lastPt.cum;
+      ctx.beginPath(); ctx.arc(xOf(li), yOf(lv), 4, 0, Math.PI*2);
+      ctx.fillStyle = color; ctx.fill();
+      ctx.strokeStyle = '#080a0d'; ctx.lineWidth = 2; ctx.stroke();
     }
   }
-
-  tooltip.innerHTML = html;
-  tooltip.style.display = 'block';
-  tooltip.style.left = (e.clientX + 16) + 'px';
-  tooltip.style.top = (e.clientY - 10) + 'px';
-});
-
-canvas.addEventListener('mouseleave', hideTooltip);
-function hideTooltip() {
-  document.getElementById('tooltip').style.display = 'none';
 }
 
-// ── FACTOR CHARTS ─────────────────────────────────────────────────────────────
+// equity hover
+eqC.addEventListener('mousemove', e => {
+  if (!D) return;
+  const rect = eqC.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const w = parseFloat(eqC.style.width);
+  const pad = {l:68, r:24};
+  const cw = w - pad.l - pad.r;
+  const N = D.meta.dates.length;
+  const idx = Math.round(((mx - pad.l) / cw) * (N-1));
+  if (idx < 0 || idx >= N) { hideTip(); return; }
+  const date = D.meta.dates[idx];
+  const tip = document.getElementById('tip');
+  let html = `<div class="tip-date">${date}</div>`;
+  let hasData = false;
+  for (const key of activeKeys) {
+    const s = D.strategies[key];
+    const pt = s.daily_pl.find(p => p.date === date);
+    if (pt) {
+      html += `<div class="tip-row"><span style="color:${s.color}">${s.name.split(' ').slice(0,2).join(' ')}</span><span>${pt.cum>=0?'+':''}$${pt.cum.toFixed(2)}</span></div>`;
+      hasData = true;
+    }
+  }
+  if (!hasData) { hideTip(); return; }
+  tip.innerHTML = html; tip.style.display = 'block';
+  tip.style.left = (e.clientX+16)+'px'; tip.style.top = (e.clientY-10)+'px';
+});
+eqC.addEventListener('mouseleave', hideTip);
+
+// ── SCATTER ───────────────────────────────────────────────────────────────────
+const scC = document.getElementById('scCanvas');
+const scCtx = scC.getContext('2d');
+
+function drawScatter() {
+  if (!D) return;
+  const h = parseInt(getComputedStyle(scC).height) || 280;
+  const { w } = sizeCanvas(scC, h);
+  const ctx = scCtx;
+  const pad = { t:20, r:20, b:38, l:68 };
+  const cw = w-pad.l-pad.r, ch = h-pad.t-pad.b;
+
+  const bets = D.scatter;
+  const maxOdds = Math.min(Math.max(...bets.map(b=>b.odds)), 35);
+  const profits = bets.map(b=>b.profit);
+  const minP = Math.min(...profits), maxP = Math.max(...profits);
+  const pPad = (maxP-minP)*0.08;
+  const yMin = minP-pPad, yMax = maxP+pPad;
+
+  const xOf = v => pad.l + (Math.min(v,maxOdds)/maxOdds)*cw;
+  const yOf = v => pad.t + ch - ((v-yMin)/(yMax-yMin))*ch;
+
+  ctx.clearRect(0,0,w,h);
+
+  // grid
+  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
+  [0,5,10,15,20,25,30,35].forEach(x => {
+    const px = xOf(x);
+    ctx.beginPath(); ctx.moveTo(px,pad.t); ctx.lineTo(px,pad.t+ch); ctx.stroke();
+    ctx.fillStyle='rgba(122,143,168,0.5)'; ctx.font='10px DM Mono,monospace'; ctx.textAlign='center';
+    ctx.fillText(x+'/1', px, h-pad.b+16);
+  });
+  [-20,-10,0,10,20].forEach(y => {
+    const py = yOf(y);
+    if (py < pad.t || py > pad.t+ch) return;
+    ctx.beginPath(); ctx.moveTo(pad.l,py); ctx.lineTo(pad.l+cw,py); ctx.stroke();
+    ctx.fillStyle='rgba(122,143,168,0.6)'; ctx.textAlign='right';
+    ctx.fillText((y>=0?'+':'')+'$'+y, pad.l-8, py+4);
+  });
+
+  // zero line
+  const zp = yOf(0);
+  ctx.setLineDash([3,5]); ctx.strokeStyle='rgba(255,255,255,0.12)';
+  ctx.beginPath(); ctx.moveTo(pad.l,zp); ctx.lineTo(pad.l+cw,zp); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // axis labels
+  ctx.fillStyle='rgba(122,143,168,0.5)'; ctx.font='10px DM Mono,monospace';
+  ctx.textAlign='center'; ctx.fillText('Odds at post →', pad.l+cw/2, h-2);
+  ctx.save(); ctx.translate(12, pad.t+ch/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Profit per bet →', 0, 0); ctx.restore();
+
+  // dots
+  bets.forEach(b => {
+    const x = xOf(b.odds), y = yOf(b.profit);
+    if (x < pad.l || x > pad.l+cw) return;
+    const r = 5;
+    const color = b.outcome==='win' ? 'rgba(56,217,138,0.7)' : b.outcome==='show' ? 'rgba(79,142,245,0.55)' : 'rgba(224,85,85,0.45)';
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    if (b.hot) {
+      ctx.beginPath(); ctx.arc(x,y,r+2.5,0,Math.PI*2);
+      ctx.strokeStyle='rgba(200,168,75,0.7)'; ctx.lineWidth=1.5; ctx.stroke();
+    }
+  });
+}
+
+// scatter hover
+scC.addEventListener('mousemove', e => {
+  if (!D) return;
+  const rect = scC.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const w = parseFloat(scC.style.width), h = parseFloat(scC.style.height);
+  const pad={t:20,r:20,b:38,l:68};
+  const cw=w-pad.l-pad.r, ch=h-pad.t-pad.b;
+  const maxOdds=35;
+  const bets=D.scatter;
+  const profits=bets.map(b=>b.profit);
+  const minP=Math.min(...profits),maxP=Math.max(...profits);
+  const yMin=minP-(maxP-minP)*0.08, yMax=maxP+(maxP-minP)*0.08;
+  const xOf = v=>pad.l+(Math.min(v,maxOdds)/maxOdds)*cw;
+  const yOf = v=>pad.t+ch-((v-yMin)/(yMax-yMin))*ch;
+
+  let closest=null, dist=20;
+  bets.forEach(b=>{
+    const dx=mx-xOf(b.odds), dy=my-yOf(b.profit), d=Math.sqrt(dx*dx+dy*dy);
+    if(d<dist){dist=d;closest=b;}
+  });
+  if(!closest){hideTip();return;}
+  const tip=document.getElementById('tip');
+  const oc = closest.outcome==='win'?'var(--win-c)':closest.outcome==='show'?'var(--show-c)':'var(--red)';
+  tip.innerHTML=`
+    <div class="tip-date">${closest.date} · ${closest.track}</div>
+    <div class="tip-row"><span>Horse</span><span>${closest.horse}</span></div>
+    <div class="tip-row"><span>Fig</span><span>${closest.fig}</span></div>
+    <div class="tip-row"><span>Gap</span><span>${closest.gap}pt</span></div>
+    <div class="tip-row"><span>Odds</span><span>${closest.odds}/1</span></div>
+    <div class="tip-row"><span>Outcome</span><span style="color:${oc}">${closest.outcome.toUpperCase()}</span></div>
+    <div class="tip-row"><span>Profit</span><span style="color:${oc}">${closest.profit>=0?'+':''}$${closest.profit.toFixed(2)}</span></div>
+  `;
+  tip.style.display='block';
+  tip.style.left=(e.clientX+16)+'px'; tip.style.top=(e.clientY-10)+'px';
+});
+scC.addEventListener('mouseleave', hideTip);
+
+function hideTip() { document.getElementById('tip').style.display='none'; }
+
+// ── LEGEND ────────────────────────────────────────────────────────────────────
+function renderLegend() {
+  const leg = document.getElementById('chartLeg');
+  leg.innerHTML = '';
+  Object.entries(D.strategies).forEach(([key,s])=>{
+    const div = document.createElement('div');
+    div.className = `leg-item${activeKeys.has(key)?'':' off'}`;
+    div.dataset.key = key;
+    div.innerHTML = `<div class="leg-dot" style="background:${s.color}"></div><span class="leg-name">${s.name}</span><span class="leg-roi" style="color:${s.color}">${pct(s.roi)}</span>`;
+    div.addEventListener('click',()=>toggleCard(key));
+    leg.appendChild(div);
+  });
+}
+
+// ── FACTOR GRID ───────────────────────────────────────────────────────────────
 function renderFactors() {
-  const grid = document.getElementById('factorsGrid');
-  const factorTitles = {
-    odds_buckets: 'ROI by Odds Range',
-    fig_buckets: 'ROI by Top Speed Figure',
-    gap_buckets: 'ROI by Fig Gap to 2nd Best',
-    field_size: 'ROI by Field Size',
-    dow: 'ROI by Day of Week',
-    ml_rank: 'ROI by ML Betting Rank',
-    race_type: 'ROI by Race Type',
-    track: 'ROI by Track',
+  const grid = document.getElementById('factorGrid');
+  grid.innerHTML = '';
+
+  const FACTOR_TITLES = {
+    odds:'ROI by Odds Range', fig:'ROI by Top Speed Figure',
+    gap:'ROI by Fig Gap to 2nd', field:'ROI by Field Size',
+    dow:'ROI by Day of Week', ml_rank:'ROI by ML Betting Rank',
+    race_type:'ROI by Race Type', track:'ROI by Track',
   };
 
-  for (const [key, rows] of Object.entries(RAW.factors)) {
-    if (!rows.length) continue;
-    const maxROI = Math.max(...rows.map(r => Math.abs(r.roi)), 10);
+  Object.entries(D.factors).forEach(([key, rows]) => {
+    if (key==='track') return; // rendered separately
+    if (!rows.length) return;
+    const validRois = rows.map(r=>r.roi).filter(r=>isFinite(r));
+    const maxAbs = Math.max(...validRois.map(Math.abs), 1);
 
-    const card = document.createElement('div');
-    card.className = 'factor-card';
-    card.innerHTML = `<div class="factor-title">${factorTitles[key] || key}</div>`;
+    const fc = document.createElement('div');
+    fc.className = 'fc';
+    fc.innerHTML = `<div class="fc-title">${FACTOR_TITLES[key]||key}</div>`;
 
     rows.forEach(row => {
-      const pct = Math.min(Math.abs(row.roi) / maxROI * 100, 100);
+      if (!isFinite(row.roi)) return;
+      const pctFull = Math.min(Math.abs(row.roi)/maxAbs*100,100);
       const isNeg = row.roi < 0;
-      const roiColor = isNeg ? 'var(--red)' : (row.roi > 100 ? 'var(--gold2)' : 'var(--text)');
-      const barClass = isNeg ? 'factor-bar-neg' : 'factor-bar-roi';
-      card.innerHTML += `
-        <div class="factor-row">
-          <div class="factor-label">${row.label}</div>
-          <div class="factor-bar-wrap">
-            <div class="factor-bar ${barClass}" style="width:${pct}%"></div>
+      const roiColor = isNeg ? 'var(--red)' : (row.roi > 80 ? 'var(--gold2)' : 'var(--text)');
+      fc.innerHTML += `
+        <div class="fc-row">
+          <div class="fc-lbl" title="${row.label}">${row.label}</div>
+          <div class="fc-bar-bg">
+            <div class="fc-bar ${isNeg?'fc-neg':'fc-pos'}" style="width:${pctFull}%"></div>
           </div>
-          <div class="factor-roi-val" style="color:${roiColor}">${row.roi >= 0 ? '+' : ''}${row.roi}%</div>
-          <div class="factor-n">n=${row.n}</div>
-        </div>
-      `;
+          <div class="fc-roi" style="color:${roiColor}">${row.roi>=0?'+':''}${row.roi}%</div>
+          <div class="fc-n">n=${row.n}</div>
+        </div>`;
     });
+    grid.appendChild(fc);
+  });
+}
 
-    grid.appendChild(card);
-  }
+// ── TRACK TABLE ───────────────────────────────────────────────────────────────
+function renderTrackTable() {
+  const tbody = document.getElementById('trackBody');
+  if (!tbody || !D.factors.track) return;
+  const maxROI = Math.max(...D.factors.track.map(t=>t.roi).filter(isFinite), 1);
+  tbody.innerHTML = '';
+  D.factors.track.forEach(t => {
+    if (!isFinite(t.roi)) return;
+    const pct = Math.min(Math.max(t.roi,0)/maxROI*100,100);
+    const roiColor = t.roi > 50 ? 'var(--green)' : t.roi > 0 ? 'var(--gold)' : 'var(--red)';
+    tbody.innerHTML += `
+      <tr>
+        <td>${t.label}<span style="color:var(--text3);font-size:10px;margin-left:6px">${t.full_name||''}</span></td>
+        <td>${t.n}</td>
+        <td style="color:var(--win-c)">${t.win_rate}%</td>
+        <td style="color:var(--show-c)">${t.show_rate}%</td>
+        <td>$${t.wagered}</td>
+        <td style="color:${t.net>=0?'var(--green)':'var(--red)'}">${t.net>=0?'+':''}$${t.net}</td>
+        <td style="color:${roiColor};font-weight:500">${t.roi>=0?'+':''}${t.roi}%</td>
+        <td class="track-bar-cell"><div class="track-bar-wrap"><div class="track-bar-fill" style="width:${pct}%;background:${roiColor}"></div></div></td>
+      </tr>`;
+  });
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-renderCards();
-renderLegend();
-renderFactors();
+function init() {
+  renderMeta();
+  renderCards();
+  renderLegend();
+  renderFactors();
+  renderTrackTable();
+  requestAnimationFrame(() => {
+    setTimeout(() => { drawEquity(); drawScatter(); }, 80);
+  });
+}
 
-// Delay chart render until layout is complete
-requestAnimationFrame(() => {
-  setTimeout(() => {
-    renderChart();
-  }, 100);
-});
-
-window.addEventListener('resize', () => {
-  renderChart();
-});
+window.addEventListener('resize', () => { drawEquity(); drawScatter(); });
 </script>
 </body>
 </html>
