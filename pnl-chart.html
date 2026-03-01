@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fig Anomaly — P&L Over Time</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Space+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #08080b;
+  --surface: #0f0f14;
+  --border: #1e1e28;
+  --gold: #c9a84c;
+  --txt: #d0d0e0;
+  --muted: #44445a;
+  --mono: 'Space Mono', monospace;
+  --serif: 'Playfair Display', serif;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--sans);
+  min-height: 100vh;
+  padding: 0 0 60px;
+}
+
+header {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #0c0c12 0%, #10101a 100%);
+}
+.header-row {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+h1 {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--gold);
+  font-weight: 700;
+}
+.subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+main { max-width: 960px; margin: 0 auto; padding: 20px 16px; }
+
+/* Stat cards */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, opacity 0.15s;
+  position: relative;
+}
+.stat-card.muted { opacity: 0.35; }
+.stat-card.active { border-color: var(--c); }
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--c);
+  border-radius: 8px 8px 0 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.stat-card.active::before { opacity: 1; }
+.sc-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.sc-roi {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c);
+}
+.sc-sub {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #555570;
+  margin-top: 4px;
+}
+.sc-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+  display: inline-block;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* Toggle buttons */
+.toggle-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.toggle-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #555570;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: all 0.15s;
+}
+.toggle-btn.on { border-color: #555; color: var(--txt); }
+.toggle-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* Chart */
+.chart-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 16px 12px;
+  position: relative;
+  margin-bottom: 20px;
+}
+canvas { display: block; width: 100%; }
+
+.chart-mode-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+.mode-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.mode-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.mode-btn.active { background: #1e1c10; border-color: var(--gold); color: var(--gold); }
+
+/* Crosshair tooltip */
+.crosshair-tip {
+  position: absolute;
+  background: #14141e;
+  border: 1px solid var(--gold);
+  border-radius: 7px;
+  padding: 9px 13px;
+  font-family: var(--mono);
+  font-size: 11px;
+  pointer-events: none;
+  display: none;
+  z-index: 10;
+  white-space: nowrap;
+  line-height: 1.8;
+  top: 20px;
+}
+
+/* Drawdown strip */
+.section-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin: 24px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* Per-bet scatter (small) */
+.scatter-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.12s;
+}
+.legend-item:hover { color: var(--txt); }
+.legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+@media (max-width: 500px) {
+  .stat-row { grid-template-columns: 1fr 1fr; }
+  h1 { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <h1>Fig Anomaly System</h1>
+    <div class="subtitle">Cumulative P&amp;L · Jan–Feb 2026 · 5 Strategies</div>
+  </div>
+</header>
+
+<main>
+  <div class="stat-row" id="statRow"></div>
+
+  <div class="chart-mode-row">
+    <span class="mode-label">View:</span>
+    <button class="mode-btn active" id="btnCumPnl" onclick="setMode('cum_pnl')">Cumulative $</button>
+    <button class="mode-btn" id="btnCumRoi" onclick="setMode('cum_roi')">Cumulative ROI %</button>
+    <button class="mode-btn" id="btnDaily" onclick="setMode('daily')">Daily P&L</button>
+  </div>
+
+  <div class="chart-wrap" id="mainWrap">
+    <canvas id="mainCanvas" height="320"></canvas>
+    <div class="crosshair-tip" id="tip"></div>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="section-label">Per-Bet Waterfall — v1 Base</div>
+  <div class="scatter-wrap">
+    <canvas id="waterfallCanvas" height="120"></canvas>
+  </div>
+
+  <div class="section-label">Daily Win/Loss Streak — v1 Base</div>
+  <div class="scatter-wrap">
+    <canvas id="streakCanvas" height="80"></canvas>
+  </div>
+</main>
+
+<script>
+// ── Embedded data ─────────────────────────────────────────────────────────────
+const RAW = {"v1_base": {"label": "Base System", "color": "#3ecf6a", "roi": 68.14, "net_pl": 498.82, "n_bets": 206, "wins": 69, "win_rate": 33.5, "series": [{"date": "2026-01-01", "cum_pnl": -7.06, "daily_pnl": -7.06, "cum_roi": -29.4}, {"date": "2026-01-02", "cum_pnl": -12.44, "daily_pnl": -5.38, "cum_roi": -25.9}, {"date": "2026-01-03", "cum_pnl": -6.74, "daily_pnl": 5.7, "cum_roi": -10.5}, {"date": "2026-01-04", "cum_pnl": -16.74, "daily_pnl": -10.0, "cum_roi": -22.6}, {"date": "2026-01-07", "cum_pnl": -1.34, "daily_pnl": 15.4, "cum_roi": -1.5}, {"date": "2026-01-08", "cum_pnl": -6.54, "daily_pnl": -5.2, "cum_roi": -6.1}, {"date": "2026-01-09", "cum_pnl": 0.56, "daily_pnl": 7.1, "cum_roi": 0.4}, {"date": "2026-01-10", "cum_pnl": 15.16, "daily_pnl": 14.6, "cum_roi": 10.7}, {"date": "2026-01-11", "cum_pnl": 6.96, "daily_pnl": -8.2, "cum_roi": 4.3}, {"date": "2026-01-15", "cum_pnl": 29.56, "daily_pnl": 22.6, "cum_roi": 15.9}, {"date": "2026-01-16", "cum_pnl": 10.12, "daily_pnl": -19.44, "cum_roi": 4.7}, {"date": "2026-01-17", "cum_pnl": 0.44, "daily_pnl": -9.68, "cum_roi": 0.2}, {"date": "2026-01-18", "cum_pnl": 15.0, "daily_pnl": 14.56, "cum_roi": 5.9}, {"date": "2026-01-19", "cum_pnl": 7.6, "daily_pnl": -7.4, "cum_roi": 2.9}, {"date": "2026-01-21", "cum_pnl": -2.2, "daily_pnl": -9.8, "cum_roi": -0.8}, {"date": "2026-01-22", "cum_pnl": -9.42, "daily_pnl": -7.22, "cum_roi": -3.1}, {"date": "2026-01-23", "cum_pnl": -14.06, "daily_pnl": -4.64, "cum_roi": -4.3}, {"date": "2026-01-24", "cum_pnl": 11.34, "daily_pnl": 25.4, "cum_roi": 3.3}, {"date": "2026-01-25", "cum_pnl": 10.14, "daily_pnl": -1.2, "cum_roi": 2.9}, {"date": "2026-01-28", "cum_pnl": 21.94, "daily_pnl": 11.8, "cum_roi": 6.2}, {"date": "2026-01-30", "cum_pnl": 29.94, "daily_pnl": 8.0, "cum_roi": 8.4}, {"date": "2026-01-31", "cum_pnl": 41.54, "daily_pnl": 11.6, "cum_roi": 11.3}, {"date": "2026-02-01", "cum_pnl": 39.54, "daily_pnl": -2.0, "cum_roi": 10.7}, {"date": "2026-02-04", "cum_pnl": 43.94, "daily_pnl": 4.4, "cum_roi": 11.6}, {"date": "2026-02-05", "cum_pnl": 41.76, "daily_pnl": -2.18, "cum_roi": 10.0}, {"date": "2026-02-06", "cum_pnl": 60.28, "daily_pnl": 18.52, "cum_roi": 14.2}, {"date": "2026-02-07", "cum_pnl": 66.68, "daily_pnl": 6.4, "cum_roi": 15.3}, {"date": "2026-02-08", "cum_pnl": 65.08, "daily_pnl": -1.6, "cum_roi": 14.8}, {"date": "2026-02-11", "cum_pnl": 125.94, "daily_pnl": 60.86, "cum_roi": 26.7}, {"date": "2026-02-12", "cum_pnl": 159.34, "daily_pnl": 33.4, "cum_roi": 31.9}, {"date": "2026-02-13", "cum_pnl": 195.42, "daily_pnl": 36.08, "cum_roi": 37.3}, {"date": "2026-02-14", "cum_pnl": 268.1, "daily_pnl": 72.68, "cum_roi": 48.4}, {"date": "2026-02-15", "cum_pnl": 335.46, "daily_pnl": 67.36, "cum_roi": 57.6}, {"date": "2026-02-17", "cum_pnl": 347.26, "daily_pnl": 11.8, "cum_roi": 59.3}, {"date": "2026-02-18", "cum_pnl": 370.66, "daily_pnl": 23.4, "cum_roi": 62.2}, {"date": "2026-02-19", "cum_pnl": 391.04, "daily_pnl": 20.38, "cum_roi": 65.2}, {"date": "2026-02-20", "cum_pnl": 435.14, "daily_pnl": 44.1, "cum_roi": 68.6}, {"date": "2026-02-21", "cum_pnl": 501.82, "daily_pnl": 66.68, "cum_roi": 75.6}, {"date": "2026-02-22", "cum_pnl": 512.42, "daily_pnl": 10.6, "cum_roi": 75.6}, {"date": "2026-02-26", "cum_pnl": 502.42, "daily_pnl": -10.0, "cum_roi": 73.0}, {"date": "2026-02-27", "cum_pnl": 502.62, "daily_pnl": 0.2, "cum_roi": 71.0}, {"date": "2026-02-28", "cum_pnl": 498.82, "daily_pnl": -3.8, "cum_roi": 68.1}]}, "v6_claiming_only": {"label": "Claiming Only", "color": "#c9a84c", "roi": 74.69, "net_pl": 379.44, "n_bets": 141, "wins": 48, "win_rate": 34.04, "series": [{"date": "2026-01-01", "cum_pnl": -2.4, "daily_pnl": -2.4, "cum_roi": -15.0}, {"date": "2026-01-02", "cum_pnl": -11.94, "daily_pnl": -9.54, "cum_roi": -39.8}, {"date": "2026-01-03", "cum_pnl": -4.24, "daily_pnl": 7.7, "cum_roi": -9.6}, {"date": "2026-01-04", "cum_pnl": -12.24, "daily_pnl": -8.0, "cum_roi": -23.5}, {"date": "2026-01-07", "cum_pnl": 1.56, "daily_pnl": 13.8, "cum_roi": 2.3}, {"date": "2026-01-08", "cum_pnl": -0.24, "daily_pnl": -1.8, "cum_roi": -0.3}, {"date": "2026-01-09", "cum_pnl": 12.96, "daily_pnl": 13.2, "cum_roi": 14.7}, {"date": "2026-01-10", "cum_pnl": 29.76, "daily_pnl": 16.8, "cum_roi": 33.1}, {"date": "2026-01-11", "cum_pnl": 23.36, "daily_pnl": -6.4, "cum_roi": 22.0}, {"date": "2026-01-15", "cum_pnl": 32.76, "daily_pnl": 9.4, "cum_roi": 26.0}, {"date": "2026-01-16", "cum_pnl": 14.56, "daily_pnl": -18.2, "cum_roi": 9.6}, {"date": "2026-01-17", "cum_pnl": 6.56, "daily_pnl": -8.0, "cum_roi": 4.1}, {"date": "2026-01-18", "cum_pnl": 23.12, "daily_pnl": 16.56, "cum_roi": 12.8}, {"date": "2026-01-19", "cum_pnl": 17.12, "daily_pnl": -6.0, "cum_roi": 9.2}, {"date": "2026-01-21", "cum_pnl": 15.32, "daily_pnl": -1.8, "cum_roi": 8.0}, {"date": "2026-01-22", "cum_pnl": 6.94, "daily_pnl": -8.38, "cum_roi": 3.3}, {"date": "2026-01-23", "cum_pnl": -1.7, "daily_pnl": -8.64, "cum_roi": -0.7}, {"date": "2026-01-24", "cum_pnl": 2.7, "daily_pnl": 4.4, "cum_roi": 1.1}, {"date": "2026-01-25", "cum_pnl": 1.5, "daily_pnl": -1.2, "cum_roi": 0.6}, {"date": "2026-01-28", "cum_pnl": 13.3, "daily_pnl": 11.8, "cum_roi": 5.3}, {"date": "2026-01-30", "cum_pnl": 21.3, "daily_pnl": 8.0, "cum_roi": 8.3}, {"date": "2026-01-31", "cum_pnl": 17.3, "daily_pnl": -4.0, "cum_roi": 6.7}, {"date": "2026-02-04", "cum_pnl": 14.38, "daily_pnl": -2.92, "cum_roi": 5.4}, {"date": "2026-02-05", "cum_pnl": 7.88, "daily_pnl": -6.5, "cum_roi": 2.7}, {"date": "2026-02-06", "cum_pnl": 11.48, "daily_pnl": 3.6, "cum_roi": 3.9}, {"date": "2026-02-07", "cum_pnl": 19.88, "daily_pnl": 8.4, "cum_roi": 6.7}, {"date": "2026-02-08", "cum_pnl": 18.28, "daily_pnl": -1.6, "cum_roi": 6.1}, {"date": "2026-02-11", "cum_pnl": 65.78, "daily_pnl": 47.5, "cum_roi": 20.3}, {"date": "2026-02-12", "cum_pnl": 103.18, "daily_pnl": 37.4, "cum_roi": 29.6}, {"date": "2026-02-13", "cum_pnl": 143.26, "daily_pnl": 40.08, "cum_roi": 38.9}, {"date": "2026-02-14", "cum_pnl": 199.74, "daily_pnl": 56.48, "cum_roi": 51.5}, {"date": "2026-02-15", "cum_pnl": 257.2, "daily_pnl": 57.46, "cum_roi": 62.4}, {"date": "2026-02-18", "cum_pnl": 270.0, "daily_pnl": 12.8, "cum_roi": 64.6}, {"date": "2026-02-19", "cum_pnl": 290.38, "daily_pnl": 20.38, "cum_roi": 68.8}, {"date": "2026-02-20", "cum_pnl": 312.04, "daily_pnl": 21.66, "cum_roi": 71.6}, {"date": "2026-02-21", "cum_pnl": 366.44, "daily_pnl": 54.4, "cum_roi": 80.4}, {"date": "2026-02-22", "cum_pnl": 381.04, "daily_pnl": 14.6, "cum_roi": 81.8}, {"date": "2026-02-26", "cum_pnl": 375.04, "daily_pnl": -6.0, "cum_roi": 79.5}, {"date": "2026-02-27", "cum_pnl": 375.24, "daily_pnl": 0.2, "cum_roi": 76.3}, {"date": "2026-02-28", "cum_pnl": 379.44, "daily_pnl": 4.2, "cum_roi": 74.7}]}, "v7_refined": {"label": "Refined (fig\u226590, gap\u22658)", "color": "#4fa8f0", "roi": 74.32, "net_pl": 240.8, "n_bets": 89, "wins": 35, "win_rate": 39.33, "series": [{"date": "2026-01-01", "cum_pnl": -4.66, "daily_pnl": -4.66, "cum_roi": -58.2}, {"date": "2026-01-02", "cum_pnl": -6.1, "daily_pnl": -1.44, "cum_roi": -30.5}, {"date": "2026-01-03", "cum_pnl": -0.1, "daily_pnl": 6.0, "cum_roi": -0.4}, {"date": "2026-01-08", "cum_pnl": -0.5, "daily_pnl": -0.4, "cum_roi": -1.8}, {"date": "2026-01-09", "cum_pnl": -6.6, "daily_pnl": -6.1, "cum_roi": -17.4}, {"date": "2026-01-10", "cum_pnl": -4.8, "daily_pnl": 1.8, "cum_roi": -12.0}, {"date": "2026-01-11", "cum_pnl": -6.4, "daily_pnl": -1.6, "cum_roi": -13.3}, {"date": "2026-01-15", "cum_pnl": 6.6, "daily_pnl": 13.0, "cum_roi": 11.0}, {"date": "2026-01-16", "cum_pnl": 1.2, "daily_pnl": -5.4, "cum_roi": 1.8}, {"date": "2026-01-17", "cum_pnl": -1.8, "daily_pnl": -3.0, "cum_roi": -2.4}, {"date": "2026-01-18", "cum_pnl": 17.56, "daily_pnl": 19.36, "cum_roi": 20.0}, {"date": "2026-01-19", "cum_pnl": 13.56, "daily_pnl": -4.0, "cum_roi": 14.7}, {"date": "2026-01-21", "cum_pnl": 5.76, "daily_pnl": -7.8, "cum_roi": 5.5}, {"date": "2026-01-22", "cum_pnl": -0.04, "daily_pnl": -5.8, "cum_roi": -0.0}, {"date": "2026-01-23", "cum_pnl": -7.44, "daily_pnl": -7.4, "cum_roi": -6.1}, {"date": "2026-01-24", "cum_pnl": 10.76, "daily_pnl": 18.2, "cum_roi": 8.0}, {"date": "2026-01-25", "cum_pnl": 9.56, "daily_pnl": -1.2, "cum_roi": 6.7}, {"date": "2026-01-31", "cum_pnl": 25.16, "daily_pnl": 15.6, "cum_roi": 17.2}, {"date": "2026-02-04", "cum_pnl": 28.48, "daily_pnl": 3.32, "cum_roi": 18.5}, {"date": "2026-02-05", "cum_pnl": 23.1, "daily_pnl": -5.38, "cum_roi": 13.0}, {"date": "2026-02-06", "cum_pnl": 38.02, "daily_pnl": 14.92, "cum_roi": 20.9}, {"date": "2026-02-07", "cum_pnl": 36.02, "daily_pnl": -2.0, "cum_roi": 19.2}, {"date": "2026-02-08", "cum_pnl": 34.42, "daily_pnl": -1.6, "cum_roi": 17.9}, {"date": "2026-02-11", "cum_pnl": 80.78, "daily_pnl": 46.36, "cum_roi": 37.4}, {"date": "2026-02-12", "cum_pnl": 100.98, "daily_pnl": 20.2, "cum_roi": 45.1}, {"date": "2026-02-13", "cum_pnl": 103.38, "daily_pnl": 2.4, "cum_roi": 43.8}, {"date": "2026-02-14", "cum_pnl": 160.46, "daily_pnl": 57.08, "cum_roi": 62.7}, {"date": "2026-02-15", "cum_pnl": 180.16, "daily_pnl": 19.7, "cum_roi": 68.2}, {"date": "2026-02-18", "cum_pnl": 202.16, "daily_pnl": 22.0, "cum_roi": 74.3}, {"date": "2026-02-20", "cum_pnl": 229.2, "daily_pnl": 27.04, "cum_roi": 78.0}, {"date": "2026-02-21", "cum_pnl": 238.0, "daily_pnl": 8.8, "cum_roi": 79.9}, {"date": "2026-02-22", "cum_pnl": 248.6, "daily_pnl": 10.6, "cum_roi": 79.7}, {"date": "2026-02-27", "cum_pnl": 240.8, "daily_pnl": -7.8, "cum_roi": 74.3}]}};
+
+const VARIANTS = Object.entries(RAW).map(([key, v]) => ({key, ...v}));
+const active = new Set(VARIANTS.map(v => v.key)); // all on by default
+let mode = 'cum_pnl';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmt(v, prefix='$') {
+  if (mode === 'cum_roi' || mode === 'daily_roi') return (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+  return (v >= 0 ? '+$' : '-$') + Math.abs(v).toFixed(2);
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Stat cards ────────────────────────────────────────────────────────────────
+function renderStatCards() {
+  const row = document.getElementById('statRow');
+  row.innerHTML = VARIANTS.map(v => `
+    <div class="stat-card ${active.has(v.key) ? 'active' : 'muted'}"
+         style="--c:${v.color}"
+         onclick="toggleVariant('${v.key}', this)">
+      <div class="sc-label"><span class="sc-dot"></span>${esc(v.label)}</div>
+      <div class="sc-roi">${v.roi >= 0 ? '+' : ''}${v.roi}%</div>
+      <div class="sc-sub">${v.n_bets} bets · ${v.net_pl >= 0 ? '+$' : '-$'}${Math.abs(v.net_pl).toFixed(2)}</div>
+      <div class="sc-sub">${v.win_rate}% win rate</div>
+    </div>
+  `).join('');
+}
+
+function toggleVariant(key, el) {
+  if (active.has(key)) {
+    if (active.size === 1) return; // keep at least one
+    active.delete(key);
+    el.classList.remove('active');
+    el.classList.add('muted');
+  } else {
+    active.add(key);
+    el.classList.add('active');
+    el.classList.remove('muted');
+  }
+  drawMain();
+}
+
+// ── Legend ────────────────────────────────────────────────────────────────────
+function renderLegend() {
+  document.getElementById('legend').innerHTML = VARIANTS.map(v => `
+    <div class="legend-item" onclick="toggleVariant('${v.key}', document.querySelectorAll('.stat-card')[${VARIANTS.indexOf(v)}])">
+      <div class="legend-dot" style="background:${v.color}"></div>
+      <span>${esc(v.label)}</span>
+    </div>
+  `).join('');
+}
+
+// ── Mode ──────────────────────────────────────────────────────────────────────
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById({cum_pnl:'btnCumPnl', cum_roi:'btnCumRoi', daily:'btnDaily'}[m])?.classList.add('active');
+  drawMain();
+}
+
+// ── Main Chart ────────────────────────────────────────────────────────────────
+function drawMain() {
+  const canvas = document.getElementById('mainCanvas');
+  const wrap = document.getElementById('mainWrap');
+  const dpr = window.devicePixelRatio || 1;
+  const W = wrap.clientWidth - 32;
+  const H = 320;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const pad = { top: 20, right: 16, bottom: 36, left: 68 };
+  const cw = W - pad.left - pad.right;
+  const ch = H - pad.top - pad.bottom;
+
+  // Collect all dates across active variants
+  const allDates = [...new Set(
+    VARIANTS.filter(v => active.has(v.key))
+      .flatMap(v => v.series.map(s => s.date))
+  )].sort();
+
+  if (!allDates.length) return;
+
+  // Get Y values for selected mode
+  function getY(s) {
+    if (mode === 'cum_pnl') return s.cum_pnl;
+    if (mode === 'cum_roi') return s.cum_roi;
+    if (mode === 'daily')   return s.daily_pnl;
+    return s.cum_pnl;
+  }
+
+  const activeVars = VARIANTS.filter(v => active.has(v.key));
+  const allVals = activeVars.flatMap(v => v.series.map(s => getY(s)));
+  const minV = Math.min(0, ...allVals);
+  const maxV = Math.max(0, ...allVals);
+  const range = maxV - minV || 1;
+
+  const xScale = i => pad.left + (i / (allDates.length - 1)) * cw;
+  const yScale = v => pad.top + ch - ((v - minV) / range) * ch;
+  const y0 = yScale(0);
+
+  // Grid
+  ctx.strokeStyle = '#18181f';
+  ctx.lineWidth = 1;
+  const gridCount = 5;
+  for (let i = 0; i <= gridCount; i++) {
+    const v = minV + (range * i / gridCount);
+    const y = yScale(v);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
+    ctx.fillStyle = '#404058';
+    ctx.font = `9px Space Mono`;
+    ctx.textAlign = 'right';
+    const label = mode === 'cum_roi' ? (v >= 0 ? '+' : '') + v.toFixed(0) + '%' :
+                  (v >= 0 ? '+$' : '-$') + Math.abs(v).toFixed(0);
+    ctx.fillText(label, pad.left - 4, y + 3);
+  }
+
+  // Zero line
+  if (minV < 0) {
+    ctx.strokeStyle = '#2a2a38';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(pad.left, y0); ctx.lineTo(pad.left + cw, y0); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Draw each variant
+  activeVars.forEach(v => {
+    // Build interpolated series: find value at each global date
+    const dateMap = Object.fromEntries(v.series.map(s => [s.date, getY(s)]));
+    let lastVal = 0;
+    const points = allDates.map((d, i) => {
+      if (dateMap[d] !== undefined) lastVal = dateMap[d];
+      return { x: xScale(i), y: yScale(lastVal), val: lastVal, date: d };
+    });
+
+    if (mode === 'daily') {
+      // Bar chart for daily mode
+      const barW = Math.max(1, cw / allDates.length - 1);
+      points.forEach(p => {
+        const pVal = dateMap[p.date];
+        if (pVal === undefined) return;
+        const barH = Math.abs(p.y - y0);
+        ctx.fillStyle = pVal >= 0
+          ? `${v.color}99`
+          : `rgba(240,79,79,0.5)`;
+        ctx.fillRect(p.x - barW/2, Math.min(p.y, y0), barW, barH);
+      });
+    } else {
+      // Area + line for cumulative modes
+      const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
+      grad.addColorStop(0, v.color + '30');
+      grad.addColorStop(1, v.color + '00');
+
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, y0);
+      points.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.lineTo(points[points.length-1].x, y0);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      ctx.beginPath();
+      points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+      ctx.strokeStyle = v.color;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+
+      // End dot
+      const last = points[points.length - 1];
+      ctx.beginPath();
+      ctx.arc(last.x, last.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = v.color;
+      ctx.fill();
+    }
+  });
+
+  // X-axis date labels
+  ctx.fillStyle = '#404058';
+  ctx.font = '9px Space Mono';
+  ctx.textAlign = 'center';
+  const labelEvery = Math.max(1, Math.floor(allDates.length / 10));
+  allDates.forEach((d, i) => {
+    if (i % labelEvery === 0) {
+      ctx.fillText(d.slice(5), xScale(i), H - 8);
+    }
+  });
+
+  // Store for crosshair
+  canvas._chartData = { pad, cw, ch, allDates, activeVars, xScale, yScale, getY, mode };
+}
+
+// ── Crosshair ─────────────────────────────────────────────────────────────────
+document.getElementById('mainCanvas').addEventListener('mousemove', function(e) {
+  const cd = this._chartData;
+  if (!cd) return;
+  const rect = this.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const { pad, cw, allDates, activeVars, xScale, getY } = cd;
+
+  if (mx < pad.left || mx > pad.left + cw) {
+    document.getElementById('tip').style.display = 'none';
+    return;
+  }
+
+  const idx = Math.round((mx - pad.left) / cw * (allDates.length - 1));
+  const date = allDates[Math.max(0, Math.min(idx, allDates.length - 1))];
+
+  const tip = document.getElementById('tip');
+  let html = `<strong style="color:var(--gold)">${date}</strong>\n`;
+  activeVars.forEach(v => {
+    const s = v.series.find(x => x.date === date) || v.series.filter(x => x.date <= date).pop();
+    if (!s) return;
+    const val = getY(s);
+    const sign = val >= 0 ? '+' : '';
+    const valStr = cd.mode === 'cum_roi' ? sign + val.toFixed(1) + '%' :
+                   (val >= 0 ? '+$' : '-$') + Math.abs(val).toFixed(2);
+    html += `<span style="color:${v.color}">●</span> ${v.label}: <strong style="color:${val>=0?'#3ecf6a':'#f04f4f'}">${valStr}</strong>\n`;
+  });
+
+  tip.innerHTML = html.replace(/\n/g, '<br>');
+  tip.style.display = 'block';
+  const tipX = Math.min(mx + 14, this.clientWidth - 200);
+  tip.style.left = tipX + 'px';
+});
+
+document.getElementById('mainCanvas').addEventListener('mouseleave', function() {
+  document.getElementById('tip').style.display = 'none';
+});
+
+// ── Waterfall (v1 per-bet) ────────────────────────────────────────────────────
+function drawWaterfall() {
+  const v1 = RAW['v1_base'];
+  if (!v1) return;
+  const canvas = document.getElementById('waterfallCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth - 32;
+  const H = 120;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const bets = v1.series; // daily series used as proxy
+  const pad = { top: 10, right: 8, bottom: 20, left: 52 };
+  const cw = W - pad.left - pad.right;
+  const ch = H - pad.top - pad.bottom;
+
+  const profits = bets.map(b => b.daily_pnl);
+  const maxAbs = Math.max(...profits.map(Math.abs), 1);
+  const barW = Math.max(2, cw / bets.length - 1);
+  const y0 = pad.top + ch / 2;
+
+  // Zero line
+  ctx.strokeStyle = '#2a2a38';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.left, y0); ctx.lineTo(pad.left + cw, y0); ctx.stroke();
+
+  bets.forEach((b, i) => {
+    const x = pad.left + (i / bets.length) * cw;
+    const h = (Math.abs(b.daily_pnl) / maxAbs) * (ch / 2);
+    const isWin = b.daily_pnl >= 0;
+    ctx.fillStyle = isWin ? 'rgba(62,207,106,0.75)' : 'rgba(240,79,79,0.65)';
+    ctx.fillRect(x, isWin ? y0 - h : y0, barW, h);
+  });
+
+  // Y axis labels
+  ctx.fillStyle = '#404058';
+  ctx.font = '9px Space Mono';
+  ctx.textAlign = 'right';
+  ctx.fillText('+$' + maxAbs.toFixed(0), pad.left - 3, pad.top + 9);
+  ctx.fillText('$0', pad.left - 3, y0 + 3);
+  ctx.fillText('-$' + maxAbs.toFixed(0), pad.left - 3, pad.top + ch);
+
+  // X dates
+  ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(bets.length / 8));
+  bets.forEach((b, i) => {
+    if (i % step === 0) ctx.fillText(b.date.slice(5), pad.left + (i / bets.length) * cw, H - 5);
+  });
+}
+
+// ── Streak bars (profitable days) ────────────────────────────────────────────
+function drawStreak() {
+  const v1 = RAW['v1_base'];
+  if (!v1) return;
+  const canvas = document.getElementById('streakCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth - 32;
+  const H = 80;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const series = v1.series;
+  const pad = { top: 8, right: 8, bottom: 22, left: 52 };
+  const cw = W - pad.left - pad.right;
+  const ch = H - pad.top - pad.bottom;
+  const barW = Math.max(3, cw / series.length - 1.5);
+
+  series.forEach((s, i) => {
+    const x = pad.left + (i / series.length) * cw;
+    const isWin = s.daily_pnl > 0;
+    ctx.fillStyle = isWin ? '#3ecf6a' : '#f04f4f';
+    ctx.fillRect(x, pad.top, barW, ch);
+    if (!isWin) {
+      ctx.fillStyle = '#f04f4f44';
+      ctx.fillRect(x, pad.top, barW, ch);
+      ctx.fillStyle = '#f04f4f';
+      ctx.fillRect(x, pad.top + ch - 4, barW, 4);
+    }
+  });
+
+  // Date labels
+  ctx.fillStyle = '#404058';
+  ctx.font = '9px Space Mono';
+  ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(series.length / 8));
+  series.forEach((s, i) => {
+    if (i % step === 0) ctx.fillText(s.date.slice(5), pad.left + (i / series.length) * cw, H - 5);
+  });
+
+  // Labels
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#3ecf6a';
+  ctx.fillText('Win day', pad.left - 3, pad.top + 12);
+  ctx.fillStyle = '#f04f4f';
+  ctx.fillText('Loss day', pad.left - 3, pad.top + ch - 4);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => { drawMain(); drawWaterfall(); drawStreak(); });
+
+renderStatCards();
+renderLegend();
+drawMain();
+drawWaterfall();
+drawStreak();
+</script>
+</body>
+</html>
